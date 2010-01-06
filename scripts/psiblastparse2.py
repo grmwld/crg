@@ -4,8 +4,8 @@
 import sys
 import os
 import optparse
-import AGBio.IO.Fasta as Fasta
-import AGBio.IO.NCBI as NCBI
+import AGBio.io.Fasta as Fasta
+import AGBio.io.NCBI as NCBI
 
 
 def main():
@@ -26,6 +26,10 @@ def main():
                        dest='evalue',
                        help='e-value threshold.',
                        metavar='FLOAT' )
+    parser.add_option( '-f', '--format',
+                       dest='format',
+                       help='Formating of the output. [query|id|accession|evalue|query_seq|sbjct_seq|full_sbjct_seq]',
+                       metavar='FORMAT' )
 
     parser.add_option( '-a', '--header_pattern',
                        dest='hpattern',
@@ -64,24 +68,20 @@ def main():
     if verbosity >= 1:
         sys.stderr.write('>>> Parsing the blast output file.\n\n')
 
-    psi_parser = NCBI.PsiBlastParser()
-    psiblast_record = psi_parser.parse(infile)
+    psi_parser = NCBI.PsiBlastXMLParser(infile)
+    psi_parser.parse()
 
     if verbosity >= 1:
         sys.stderr.write('>>> Extracting required data.\n\n')
 
-    sequences = psi_parser.extractData( psiblast_record,
-                                        evalue=evalue,
-                                        spattern=spattern)
-                                        #hpattern=hpattern )#.uniques(method='headers')
+    sequences = psi_parser.extractData( evalue=evalue,
+                                        fmt=options.format)
 
     if verbosity >= 1:
         sys.stderr.write('>>> Saving results.\n\n')
 
-    sequences.save(outfile)
-
     infile.close()
-    if outfile == sys.stdout:
+    if outfile != sys.stdout:
         outfile.close()
 
     if verbosity >= 1:

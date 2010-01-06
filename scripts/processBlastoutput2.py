@@ -51,6 +51,11 @@ def main():
                        help='pattern to look for in sequences.',
                        metavar='REGEX')
 
+    parser.add_option( '-b', '--blast_version',
+                       dest='blastversion',
+                       help='set the blast version to use, either `legacy` or `plus`.',
+                       metavar='VERSION' )
+
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
                        help='verbosity level : 0=none ; 1=standard ; 2=detailed ; 3=full',
@@ -58,7 +63,8 @@ def main():
 
     parser.set_defaults( verbosity = '1',
                          evalue = '10',
-                         pattern = None)
+                         pattern = None,
+                         blastversion = 'legacy' )
 
     (options, args) = parser.parse_args()
 
@@ -72,23 +78,20 @@ def main():
     os.system(' '.join(( 'touch', blastindexfile )))
     os.system(' '.join(( 'touch', blastfastafile )))
 
+    if options.blastversion == 'legacy':
+        fetcher = FastaCmdWrapper( entry=[],
+                                   db='/seq/databases/nr_uncompressed/nr',
+                                   outfile=blastfastafile )
+    else:
+        fetcher = BlastDbCmdWrapper( entry=[],
+                                     db='nr',
+                                     outfile=blastfastafile )
 
-    ## blastparser = BlasterParserWrapper( options.inputfilename,
-    ##                                    blastindexfile,
-    ##                                    evalue=evalue,
-    ##                                    pattern=pattern )
-
-    fetcher = BlastDbCmdWrapper( entry=[],
-                                 db='nr',
-                                 outfile=blastfastafile )
 
     ## Parse the blast output file.
     if verbosity >= 1:
         sys.stderr.write( '\n' )
         sys.stderr.write( '>>> Parsing blast output.\n' )
-        if verbosity >= 2:
-            sys.stderr.write( blastparser.cline + '\n' )
-    ## blastparser.run()
     with open(options.inputfilename, 'r') as infile:
         blastparser = PsiBlastXMLParser(infile)
         blastparser.parse()
@@ -102,7 +105,7 @@ def main():
     if verbosity >= 1:
         sys.stderr.write( '\n' )
         sys.stderr.write( '>>> Keeping only best evalues.\n' )
-    ##uniq(blastindexfile)
+    niq(blastindexfile)
 
     ## Gather all GIs in list
     entries = []

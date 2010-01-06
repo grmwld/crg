@@ -41,11 +41,19 @@ def findNotInMainIndex2(infile, mainindexfile):
     mset = set()
     tset = set()
     with open(mainindexfile, 'r') as mfile:
-        for line in mfile:
-            mset.add(line.split('|')[1])
+        try:
+            for line in mfile:
+                mset.add(line.split('|')[1])
+        except IndexError:
+            sys.stderr.write( line )
+            sys.exit('bou0')
     with open(infile, 'r') as tfile:
-        for line in tfile:
-            tset.add(line.split('|')[1])
+        try:
+            for line in tfile:
+                tset.add(line.split('|')[1])
+        except IndexError:
+            sys.stderr.write( line )
+            sys.exit('bou1')
     return list(tset.difference(mset))
 
 def countHeaders(infile):
@@ -187,13 +195,14 @@ def main():
                 sys.stderr.write( '\n' )
                 sys.stderr.write( '    index.0 : ' + str(countHeaders( blastindexfile )) + '\n' + \
                                   '    fasta.0 : ' + str(countHeaders( blastfastafile )) + '\n')
-            todownload = findNotInMainIndex( blastindexfile, mainindex )
+            todownload = findNotInMainIndex2( blastindexfile, mainindex )
             if verbosity >= 2:
                 sys.stderr.write( '\n' )
                 sys.stderr.write('>>> Downloading ' + str(len(todownload)) + ' sequences ...\n')
             for header in todownload:
-                time.sleep(0.001)
-                downloader.infile = header.split('|')[1]
+                time.sleep(0.01)
+                ##downloader.infile = header.split('|')[1]
+                downloader.infile = header
                 downloader.outfile = tmpdlrepofilename
                 if verbosity >= 3:
                     sys.stderr.write( '\n' )
@@ -208,6 +217,8 @@ def main():
                 sys.stderr.write( '>>> Sanitizing the main repository file.\n' )
             os.system(' '.join(("sed -i '/^$/d'", mainrepo )))
             os.system(' '.join(("sed -i '/>Error:/d'", mainrepo )))
+            os.system(' '.join(("sed -i '/>The/d'", mainrepo )))
+            os.system(' '.join(("sed -i ''", mainrepo )))
             if verbosity >= 2:
                 sys.stderr.write( '\n' )
                 sys.stderr.write('>>> Updating headers of the main repository.\n')

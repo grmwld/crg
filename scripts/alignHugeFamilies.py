@@ -4,9 +4,11 @@
 import sys
 import os
 import shutil
+import subprocess
 import optparse
-sys.path.append('/users/rg/agrimaldi/Code/crg/python/libs')
-import AGBio.IO.Fasta as Fasta
+#sys.path.append('/users/rg/agrimaldi/Code/crg/python/libs')
+from AGBio.Utilities import *
+import AGBio.io.Fasta as Fasta
 import AGBio.UtilityWrappers as UtilityWrappers
 
 
@@ -31,7 +33,18 @@ def removeGaps( sequence ):
 
         return sequence.replacePattern('-', '')
 
+def getTopSeqs( filename, threshold ):
+    num_seq = int(subprocess.Popen(["wc", "-l", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE).communicate()[0].split()[0])
+    evalue = 10
+    #gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
+    #wcprc = subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout)
 
+    while threshold < num_seq:
+        evalue -= 1
+        gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
+        num_seq = int(subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout, stdout=subprocess.PIPE).communicate()[0].split()[0])
+
+    return ([gi.split('|')[1] for gi in subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE).communicate()[0].split()])
 
 def main():
 
@@ -75,6 +88,11 @@ def main():
     parser.add_option( '-p', '--prepare',
                        action='store_true', dest='doprepal', default=False,
                        help='do the prepare_alignment_selenoprofiles step.')
+
+    parser.add_option( '-M', '--max_num_start_seq',
+                       dest='maxnumstartseq',
+                       help='maximum number of sequences in the first alignement to be processed. If set, a new input file with the top sequences ordered by evalue is created and used.',
+                       metavar='NAME' )
 
     parser.add_option( '-A', '--all',
                        action='store_true', dest='doall', default=False,
@@ -142,99 +160,128 @@ def main():
     prepsp = UtilityWrappers.SelenoprofilesPreWrapper(tcoffeeoutfile,
                                                       options.outputfilename,
                                                       all=True,
+                                                      tagthreshold=0.8,
                                                       temp='/home/agrimaldi/temp')
 
-    print
-    print addheaders.cline
-    print filterseqs.cline
-    print mafft.cline
-    print trimal.cline
-    print tcoffee.cline
-    print prepsp.cline
-    print
+##     print
+##     print addheaders.cline
+##     print filterseqs.cline
+##     print mafft.cline
+##     print trimal.cline
+##     print tcoffee.cline
+##     print prepsp.cline
+##     print
 
 
     if options.dryrun:
-        sys.exit('This is a dry run. Relaunch the command without the option -Y to do the actual stuff.\n')
+        print('\nThis is a dry run. Relaunch the command without the option -Y to do the actual stuff.\n')
+
+
+    ## Keep the N best sequences based on their evalues
+    if options.maxnumstartseq:
+        print getTopSeqs(infile, int(options.maxnumstartseq))
+    ##while 
 
     ## Add full headers
     if options.doheaders:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Adding headers\n\n')
-        addheaders.run()
+        if options.dryrun:
+            print addheaders.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Adding headers\n\n')
+            addheaders.run()
+    else:
+        fullheadoutfile = infile
 
     ## Filter out the 'fake' proteins
     if options.dofilter:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Filtering out\n\n')
-        filterseqs.run()
-
+        if options.dryrun:
+            print filterseqs.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Filtering out\n\n')
+            filterseqs.run()
+    else:
+        filteroutfile = fullheadoutfile
+    
     ## run mafft
     if options.domafft:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Running Mafft\n\n')
-        mafft.run()
+        if options.dryrun:
+            print mafft.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Running Mafft\n\n')
+            mafft.run()
 
     ## run trimal
     if options.dotrimal:
+        if options.dryrun:
+            print trimal.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Running Trimal\n\n')
+            trimal.run()
+
+    if not options.dryrun:
         if verbosity >= 1:
-            sys.stderr.write('\n    >>> Running Trimal\n\n')
-        trimal.run()
+            sys.stderr.write('\n    >>> Removing gaps\n\n')
 
+        ti = open(trimaloutfile1, 'r')
+        to = open(trimaloutfile2, 'w')
 
-    if verbosity >= 1:
-        sys.stderr.write('\n    >>> Removing gaps\n\n')
+        si = Fasta.loadSequences(ti)
+        ti.close()
+        refs = Fasta.SequenceList()
 
-    ti = open(trimaloutfile1, 'r')
-    to = open(trimaloutfile2, 'w')
+        ## saves the sequences with no gaps
+        for s in si:
+            refs.append(removeGaps(s))
 
-    si = Fasta.loadSequences(ti)
-    ti.close()
-    refs = Fasta.SequenceList()
+        Fasta.saveSequences(refs, to)
 
-    ## saves the sequences with no gaps
-    for s in si:
-        refs.append(removeGaps(s))
+        if verbosity >= 1:
+            sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
 
-    Fasta.saveSequences(refs, to)
+        ## Gather the non intersecting proteins from the 2 files
+        diffSelenoproteins = spDiff( mafftoutfile,
+                                     trimaloutfile1 )
 
-    if verbosity >= 1:
-        sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
+        spDiffr = Fasta.SequenceList()
 
-    ## Gather the non intersecting proteins from the 2 files
-    diffSelenoproteins = spDiff( mafftoutfile,
-                                 trimaloutfile1 )
+        ## remove gaps from selenoproteins
+        for s in diffSelenoproteins:
+            spDiffr.append(removeGaps(s))
 
-    spDiffr = Fasta.SequenceList()
+        ## append to the file the selenoproteins that were not present
+        Fasta.saveSequences(spDiffr, to)
 
-    ## remove gaps from selenoproteins
-    for s in diffSelenoproteins:
-        spDiffr.append(removeGaps(s))
-        
-    ## append to the file the selenoproteins that were not present
-    Fasta.saveSequences(spDiffr, to)
-
-    to.close()
+        to.close()
 
 
     ## run t_coffee
     if options.dotcoffee:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Running T_coffee\n\n')
-        tcoffee.run()
+        if options.dryrun:
+            print tcoffee.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Running T_coffee\n\n')
+            tcoffee.run()
     
     ## prepare alignments for selenoprofiles
     if options.doprepal:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> preparing for selenoprofiles\n\n')
-        prepsp.run()
+        if options.dryrun:
+            print prepsp.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> preparing for selenoprofiles\n\n')
+            prepsp.run()
 
     ## Add full headers
     if options.doheaders:
         if verbosity >= 1:
             sys.stderr.write('\n    >>> Adding headers\n\n')
-        addheader.
-        addheaders.run()
+#        addheader.
+#        addheaders.run()
 
 if __name__ == '__main__':
     main()

@@ -5,7 +5,7 @@ import sys
 import os
 import optparse
 sys.path.append('/users/rg/agrimaldi/Code/crg/python/libs')
-import AGBio.io.Fasta as FastaLib
+import AGBio.IO.Fasta as FastaLib
 
 
 def findSelenoproteins( sequences ):
@@ -42,7 +42,10 @@ def main():
 
     if options.inputfilename:
 
-        infile = open( options.inputfilename, 'r' )
+        inputfilenames = options.inputfilename.split(',')
+        infiles = []
+        for i in inputfilenames:
+            infiles.append( open( i, 'r' ) )
 
     else: sys.exit( 'You must provide an input filename.')
 
@@ -53,43 +56,45 @@ def main():
 
     else: outfile = sys.stdout
 
-    if verbosity >= 1:
-        print
-        print '>>> Searching for selenoproteins in file ' + options.inputfilename
-        print
+    for f in infiles:
+        if verbosity >= 1:
+            print
+            print '>>> Searching for selenoproteins in file ' + f.name
+            print
 
-    if verbosity >= 2:
-        print '>>> Loading sequences ...'
+        if verbosity >= 2:
+            print '>>> Loading sequences ...'
 
-    sequences = FastaLib.loadSequences( infile )
+        sequences = FastaLib.loadSequences( f )
 
-    if verbosity >= 2:
-        print '>>> ... Done.'
-        print
+        if verbosity >= 2:
+            print '>>> ... Done.'
+            print
 
-    if verbosity >= 2:
-        print '>>> Searching for U containing sequences ...'
+        if verbosity >= 2:
+            print '>>> Searching for U containing sequences ...'
 
-    selenoproteins = findSelenoproteins( sequences )
+        selenoproteins = findSelenoproteins( sequences )
 
-    if verbosity >= 2:
-        print '>>> ... Done.'
-        print
+        if verbosity >= 2:
+            print '>>> ... Done.'
+            print
 
-    FastaLib.saveSequences(selenoproteins, outfile)
+        FastaLib.saveSequences(selenoproteins, outfile)
 
-    for selP in selenoproteins:
+        for selP in selenoproteins:
 
-        if verbosity >= 3 and stdoutflag:
-            print selP.header.strip()
-            print selP.sequence.strip()
+            if verbosity >= 3 and stdoutflag:
+                print selP.header.strip()
+                print selP.sequence.strip()
 
-    if verbosity >= 1:
-        print
-        print 'Found ' + str( len( selenoproteins ) ) + ' selenoproteins'
-        print
+        if verbosity >= 1:
+            print
+            print 'Found ' + str( len( selenoproteins ) ) + ' selenoproteins'
+            print
 
-    infile.close()
+    for i in infiles:
+        i.close()
     outfile.close()
 
 
