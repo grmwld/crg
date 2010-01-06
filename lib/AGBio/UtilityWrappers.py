@@ -343,13 +343,15 @@ class FilterWrapper(UtilityWrapper):
 class SelenoprofilesPreWrapper(UtilityWrapper):
     '''Wrapper for the tool prepare_alignment_selenoprofiles.py
     '''
-    def __init__(self, infile, outfile, temp=None, all=True):
+    def __init__(self, infile, outfile, temp=None, all=True, tagthreshold=None):
         UtilityWrapper.__init__(self, PRESELENOPROFILES, infile, outfile)
         self['outfile'] = ['-output ', outfile]
         if temp:
             self['temp'] = ['-temp ', temp]
         if all:
             self['all'] = ['-all']
+        if tagthreshold:
+            self['tagthreshold'] = ['-tag_threshold ', str(tagthreshold)]
         self.updateCline()
 
     @property
@@ -374,6 +376,17 @@ class SelenoprofilesPreWrapper(UtilityWrapper):
             del self['all']
         self.updateCline()
 
+    @property
+    def tagthreshold(self):
+        return self.getClineOpt('tagthreshold')
+    @tagthreshold.setter
+    def tagthreshold(self, value):
+        if value:
+            self['tagthreshold'] = ['-tagthreshold ', str(value)]
+        elif 'tagthreshold' in self.keys():
+            del self['tagthreshold']
+        self.updateCline()
+        
     def updateCline(self):
         '''Updates the commandline based on the options.
         Makes sure that the infile option comes first.
