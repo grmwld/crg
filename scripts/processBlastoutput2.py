@@ -24,38 +24,13 @@ def uniq(infile):
         for header, evalue in headict.items():
             ofile.write(header + ' ' + evalue + '\n')
             
-def getTopSeqs( filename, threshold ):
-    num_seq = int(subprocess.Popen(["wc", "-l",
-                                    changeFileExtension(filename, 'index.0', 2)],
-                                   stdout=subprocess.PIPE).communicate()[0].split()[0])
-    evalue = 10
-    #gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
-    #wcprc = subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout)
-
-    while threshold < num_seq:
-        evalue -= 1
-        gawkprc = subprocess.Popen(["gawk",
-                                    "{if ($2 < 1e"+str(evalue)+"){print $1}}",
-                                    changeFileExtension(filename, 'index.0', 2)],
-                                   stdout=subprocess.PIPE)
-        num_seq = int(subprocess.Popen(["wc",
-                                        "-l"],
-                                       stdin=gawkprc.stdout,
-                                       stdout=subprocess.PIPE).communicate()[0].split()[0])
-
-    return ([gi.split('|')[1] for gi in subprocess.Popen(["gawk",
-                                                          "{if ($2 < 1e"+str(evalue)+"){print $1}}",
-                                                          changeFileExtension(filename, 'index.0', 2)],
-                                                         stdout=subprocess.PIPE).communicate()[0].split()])
-
 def getTopSeqs2(seqs, maxnumseqs=400, startevalue=10, keepU=True, verbose=False ):
     topseqs = seqs
     evalue = startevalue
     while len(topseqs) > maxnumseqs:
         if verbose:
-            sys.stderr.write( '\n' )
-            sys.stderr.write( '   >>> evalue : 1e' + str(evalue) + '.\n' )
-            sys.stderr.write( '   >>> ' + str(len(topseqs)) + ' Found.\n' )
+            sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
+            sys.stderr.write( '        >>> ' + str(len(topseqs)) + ' Found.\n' )
         evalue -= 1
         topseqs = Fasta.SequenceList()
         for seq in seqs:
@@ -152,8 +127,8 @@ def main():
     with open(options.inputfilename, 'r') as infile:
         blastparser = PsiBlastXMLParser(infile)
         blastparser.parse()
-        if verbosity >= 1:
-            sys.stderr.write('>>> Extracting required data.\n\n')
+        if verbosity >= 2:
+            sys.stderr.write('    >>> Extracting required data.\n')
         if options.dofilter:
             sequences = blastparser.extractData( evalue=evalue,
                                                  fmt='header,evalue',
@@ -173,6 +148,9 @@ def main():
     uniq(blastindexfile)
     
     ## Gather all GIs in list
+    if verbosity >= 2:
+        sys.stderr.write( '\n' )
+        sys.stderr.write( '>>> Gathering all Gis.\n' )
     entries = []
     with open(blastindexfile, 'r') as bif:
         for line in bif:
@@ -183,7 +161,7 @@ def main():
     ## TODO : Fetch failed from the web.
     if verbosity >= 1:
         sys.stderr.write( '\n' )
-        sys.stderr.write( '>>> Building fasta.0 file.\n' )
+        sys.stderr.write( '>>> Building fasta.0 file by fetching sequences from local database.\n' )
     fetcher.run()
 
     ## Apply final filters : keep only top evalues and U containing until a threshold is reached
@@ -192,27 +170,23 @@ def main():
             sys.stderr.write( '\n' )
             sys.stderr.write( '>>> Applying final filters on ' + blastfastafile + '.\n' )
         if verbosity >= 2:
-            sys.stderr.write( '\n' )
-            sys.stderr.write( '  >>> Adding evalue to headers.\n' )
+            sys.stderr.write( '    >>> Adding evalue to headers.\n' )
         tmpfullheadfasta = blastfastafile + '.fh'
         addheaders = AddFullHeadersWrapper(blastfastafile,
                                            tmpfullheadfasta,
                                            blastindexfile)
         addheaders.run()
-        if verbosity >= 2:
-            sys.stderr.write( '\n' )
-            sys.stderr.write( '  >>> Loading sequences.\n' )
+        if verbosity >= 3:
+            sys.stderr.write( '        >>> Loading sequences.\n' )
         with open(tmpfullheadfasta, 'r') as ff:
             allseqs = Fasta.loadSequences(ff)
         if verbosity >= 2:
-            sys.stderr.write( '\n' )
-            sys.stderr.write( '  >>> Keeping valid sequences.\n' )
-        print options.maxnumstartseq
+            sys.stderr.write( '    >>> Keeping valid sequences.\n' )
         validseqs = getTopSeqs2(seqs=allseqs,
                                 maxnumseqs=maxnumstartseq,
-                                startevalue=10,
+                                startevalue=-10,
                                 keepU=True,
-                                verbose=verbosity>=3 )
+                                verbose=verbosity>=4 )
         keptseqs = ''.join(( options.outputfilename, '.', str(len(validseqs)), '.fasta' ))
         with open(keptseqs, 'w') as ff:
             validseqs.save(ff)
