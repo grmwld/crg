@@ -8,15 +8,13 @@ from AGBio.io.NCBI import PsiBlastXMLParser
 from AGBio.UtilityWrappers import *
 from AGBio.ncbi.BlastWrappers import *
 
-TEMP = '/tmp/'
-
 def uniq(infile):
     '''Use remove duplicate headers, keeping the one with the lowest evalue.
     '''
     headict={}
     with open(infile) as ifile:
         for line in ifile:
-            sline = line.split()
+            sline = (' '.join(line.split()[:-1]), line.split()[-1])
             if sline[0] in headict:
                 if float(sline[1]) < float(headict[sline[0]]):
                     headict[sline[0]] = sline[1]
@@ -25,7 +23,30 @@ def uniq(infile):
     with open(infile, 'w') as ofile:
         for header, evalue in headict.items():
             ofile.write(header + ' ' + evalue + '\n')
+            
+def getTopSeqs( filename, threshold ):
+    num_seq = int(subprocess.Popen(["wc", "-l",
+                                    changeFileExtension(filename, 'index.0', 2)],
+                                   stdout=subprocess.PIPE).communicate()[0].split()[0])
+    evalue = 10
+    #gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
+    #wcprc = subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout)
 
+    while threshold < num_seq:
+        evalue -= 1
+        gawkprc = subprocess.Popen(["gawk",
+                                    "{if ($2 < 1e"+str(evalue)+"){print $1}}",
+                                    changeFileExtension(filename, 'index.0', 2)],
+                                   stdout=subprocess.PIPE)
+        num_seq = int(subprocess.Popen(["wc",
+                                        "-l"],
+                                       stdin=gawkprc.stdout,
+                                       stdout=subprocess.PIPE).communicate()[0].split()[0])
+
+    return ([gi.split('|')[1] for gi in subprocess.Popen(["gawk",
+                                                          "{if ($2 < 1e"+str(evalue)+"){print $1}}",
+                                                          changeFileExtension(filename, 'index.0', 2)],
+                                                         stdout=subprocess.PIPE).communicate()[0].split()])
 
 def main():
 
@@ -55,7 +76,23 @@ def main():
                        dest='blastversion',
                        help='set the blast version to use, either `legacy` or `plus`.',
                        metavar='VERSION' )
+    
+    parser.add_option( '-f', '--filter',
+                       action='store_true', dest='dofilter', default=False,
+                       help='do the filter step.')
 
+    parser.add_option( '-M', '--max_num_start_seq',
+                       dest='maxnumstartseq',
+                       help='maximum number of sequences in the first alignement to be' +\
+                       'processed. If set, a new input file with the top sequences ordered' +\
+                       'by evalue is created and used.',
+                       metavar='NAME' )
+    
+    parser.add_option( '-T', '--temp',
+                       dest='temp',
+                       help='set the temp folder to use.',
+                       metavar='FOLDER' )
+    
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
                        help='verbosity level : 0=none ; 1=standard ; 2=detailed ; 3=full',
@@ -64,13 +101,15 @@ def main():
     parser.set_defaults( verbosity = '1',
                          evalue = '10',
                          pattern = None,
-                         blastversion = 'legacy' )
+                         blastversion = 'legacy',
+                         temp = '/tmp/' )
 
     (options, args) = parser.parse_args()
 
     verbosity = int(options.verbosity)
     evalue = options.evalue
     pattern = options.pattern
+    temp = options.temp
 
     blastindexfile = ''.join(( options.outputfilename, '.index.0' ))
     blastfastafile = ''.join(( options.outputfilename, '.fasta.0' ))
@@ -87,6 +126,13 @@ def main():
                                      db='nr',
                                      outfile=blastfastafile )
 
+##     if options.dofilter:
+##         filterer = UtilityWrappers.FilterWrapper(blastindexfile,
+##                                                  os.path.join(temp, blastindexfile + '.filt'),
+##                                                  inverse=True,
+##                                                  titlematch=('PREDICTED',
+##                                                              'predicted',
+##                                                              'hypothetical'))
 
     ## Parse the blast output file.
     if verbosity >= 1:
@@ -97,16 +143,31 @@ def main():
         blastparser.parse()
         if verbosity >= 1:
             sys.stderr.write('>>> Extracting required data.\n\n')
-        sequences = blastparser.extractData( evalue=evalue,
-                                             fmt='id,evalue',
-                                             outfile=blastindexfile)
-
+        if options.dofilter:
+            sequences = blastparser.extractData( evalue=evalue,
+                                                 fmt='header,evalue',
+                                                 outfile=blastindexfile,
+                                                 excludepatterns=(('title', 'hypothetical'),
+                                                                  ('title', 'predicted'),
+                                                                  ('title', 'PREDICTED')))
+        else:
+            sequences = blastparser.extractData( evalue=evalue,
+                                                 fmt='header,evalue',
+                                                 outfile=blastindexfile )
+            
+    ## Filter out hypothetical and predicted sequences.
+    ##if options.dofilter:
+    ##    if verbosity >= 1:
+    ##    sys.stderr.write( '\n' )
+    ##    sys.stderr.write( '>>> Filtering out unwanted sequences.\n' )
+    ##uniq(blastindexfile)
+        
     ## Only keep one copy of a header, the one with the best evalue.
     if verbosity >= 1:
         sys.stderr.write( '\n' )
         sys.stderr.write( '>>> Keeping only best evalues.\n' )
-    niq(blastindexfile)
-
+    uniq(blastindexfile)
+    
     ## Gather all GIs in list
     entries = []
     with open(blastindexfile, 'r') as bif:
@@ -120,6 +181,7 @@ def main():
         sys.stderr.write( '\n' )
         sys.stderr.write( '>>> Building fasta.0 file.\n' )
     fetcher.run()
+
 
 if __name__ == '__main__':
     main()

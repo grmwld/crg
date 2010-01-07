@@ -33,9 +33,12 @@ def removeGaps( sequence ):
 
         return sequence.replacePattern('-', '')
 
-def getTopSeqs( filename, threshold ):
-    num_seq = int(subprocess.Popen(["wc", "-l", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE).communicate()[0].split()[0])
-    evalue = 10
+def getTopSeqs( filename, threshold, minevalue=10 ):
+    num_seq = int(subprocess.Popen(["wc",
+                                    "-l",
+                                    changeFileExtension(filename, 'index.0', 2)],
+                                   stdout=subprocess.PIPE).communicate()[0].split()[0])
+    evalue = 
     #gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
     #wcprc = subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout)
 
@@ -45,6 +48,8 @@ def getTopSeqs( filename, threshold ):
         num_seq = int(subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout, stdout=subprocess.PIPE).communicate()[0].split()[0])
 
     return ([gi.split('|')[1] for gi in subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE).communicate()[0].split()])
+
+def getTopSeqs2(indexfile, threshold, fastafile)
 
 def main():
 
@@ -101,6 +106,11 @@ def main():
     parser.add_option( '-Y', '--dry',
                        action='store_true', dest='dryrun', default=False,
                        help="Prints the commands without executing them.")
+    
+    parser.add_option( '-T', '--temp',
+                       dest='temp',
+                       help='set the temp folder to use.',
+                       metavar='FOLDER' )
 
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
@@ -110,7 +120,8 @@ def main():
 
 
     parser.set_defaults( verbosity = '1',
-                         ncore = '1' )
+                         ncore = '1',
+                         temp = '/tmp/')
 
     (options, args) = parser.parse_args()
 
@@ -123,6 +134,8 @@ def main():
         
     
     infile = options.inputfilename
+    tmpinfile = infile
+    tmpoutfile = None
 
     mafftoutfile = ''.join((options.outputfilename, '_mafft.fasta'))
     trimaloutfile1 = ''.join((options.outputfilename, '_trimmed_native.fasta'))
@@ -130,7 +143,7 @@ def main():
     trimaloutfile = trimaloutfile1
     tcoffeeoutfile = ''.join((options.outputfilename, '_tcoffee.fasta'))
     fullheadoutfile = ''.join((options.outputfilename, '.det.fasta'))
-    patternfile = ''.join(('.'.join(options.inputfilename.split('.')[:2]), '.index'))
+    patternfile = ''.join(('.'.join(options.inputfilename.split('.')[:2]), '.index.0'))
     filteroutfile = ''.join((options.outputfilename, '.filt.fasta'))
 
     ncore = options.ncore
@@ -161,26 +174,12 @@ def main():
                                                       options.outputfilename,
                                                       all=True,
                                                       tagthreshold=0.8,
-                                                      temp='/home/agrimaldi/temp')
-
-##     print
-##     print addheaders.cline
-##     print filterseqs.cline
-##     print mafft.cline
-##     print trimal.cline
-##     print tcoffee.cline
-##     print prepsp.cline
-##     print
-
+                                                      temp=temp)
 
     if options.dryrun:
         print('\nThis is a dry run. Relaunch the command without the option -Y to do the actual stuff.\n')
 
 
-    ## Keep the N best sequences based on their evalues
-    if options.maxnumstartseq:
-        print getTopSeqs(infile, int(options.maxnumstartseq))
-    ##while 
 
     ## Add full headers
     if options.doheaders:
@@ -204,6 +203,12 @@ def main():
     else:
         filteroutfile = fullheadoutfile
     
+    ## Keep the N best sequences based on their evalues
+    ## if options.maxnumstartseq:
+##         seqs = getTopSeqs(infile, int(options.maxnumstartseq), keepU=True)
+##         refetch()
+    with open()
+        
     ## run mafft
     if options.domafft:
         if options.dryrun:
