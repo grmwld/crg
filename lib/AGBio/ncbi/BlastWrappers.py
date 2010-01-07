@@ -91,11 +91,11 @@ class FastaCmdWrapper(BaseCmdWrapper, HasOutFile):
         if entry:
             self.entry = ','.join(entry)
         if info:
-            self.info = ''
+            self.info = ' '
         if db:
             self.db = db
         if target_only:
-            self.target_only = ''
+            self.target_only = ' '
         self.updateCline()
 
     @property

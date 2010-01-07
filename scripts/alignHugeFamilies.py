@@ -135,7 +135,6 @@ def main():
     
     infile = options.inputfilename
     tmpinfile = infile
-    tmpoutfile = None
 
     mafftoutfile = ''.join((options.outputfilename, '_mafft.fasta'))
     trimaloutfile1 = ''.join((options.outputfilename, '_trimmed_native.fasta'))
@@ -149,20 +148,20 @@ def main():
     ncore = options.ncore
     verbosity = options.verbosity
 
-    addheaders = UtilityWrappers.AddFullHeadersWrapper(infile,
+    addheaders = UtilityWrappers.AddFullHeadersWrapper(tmpinfile,
                                                        fullheadoutfile,
                                                        patternfile)
 
-    filterseqs = UtilityWrappers.FilterWrapper(fullheadoutfile,
+    filterseqs = UtilityWrappers.FilterWrapper(tmpinfile,
                                                filteroutfile,
                                                inverse=True,
                                                titlematch=('PREDICTED', 'predicted', 'hypothetical'))
 
-    mafft = UtilityWrappers.MafftWrapper(filteroutfile,
+    mafft = UtilityWrappers.MafftWrapper(tmpinfile,
                                          mafftoutfile,
                                          auto=True)
 
-    trimal = UtilityWrappers.TrimalWrapper(mafftoutfile,
+    trimal = UtilityWrappers.TrimalWrapper(tmpinfile,
                                            trimaloutfile1,
                                            clusters=100)
 
@@ -170,7 +169,7 @@ def main():
                                              tcoffeeoutfile,
                                              ncore=ncore)
 
-    prepsp = UtilityWrappers.SelenoprofilesPreWrapper(tcoffeeoutfile,
+    prepsp = UtilityWrappers.SelenoprofilesPreWrapper(tmpinfile,
                                                       options.outputfilename,
                                                       all=True,
                                                       tagthreshold=0.8,
@@ -183,34 +182,36 @@ def main():
 
     ## Add full headers
     if options.doheaders:
+        addheader.infile = tmpinfile
+        tmpinfile = fullheadoutfile
         if options.dryrun:
             print addheaders.cline
         else:
             if verbosity >= 1:
                 sys.stderr.write('\n    >>> Adding headers\n\n')
             addheaders.run()
-    else:
-        fullheadoutfile = infile
 
     ## Filter out the 'fake' proteins
     if options.dofilter:
+        filterseqs.infile = tmpinfile
+        tmpinfile = filteroutfile
         if options.dryrun:
             print filterseqs.cline
         else:
             if verbosity >= 1:
                 sys.stderr.write('\n    >>> Filtering out\n\n')
             filterseqs.run()
-    else:
-        filteroutfile = fullheadoutfile
     
     ## Keep the N best sequences based on their evalues
     ## if options.maxnumstartseq:
 ##         seqs = getTopSeqs(infile, int(options.maxnumstartseq), keepU=True)
 ##         refetch()
-    with open()
+    ##with open()
         
     ## run mafft
     if options.domafft:
+        mafft.infile = tmpinfile
+        tmpinfile = mafftoutfile
         if options.dryrun:
             print mafft.cline
         else:
@@ -220,6 +221,8 @@ def main():
 
     ## run trimal
     if options.dotrimal:
+        trimal.infile = tmpinfile
+        tmpinfile = trimaloutfile2
         if options.dryrun:
             print trimal.cline
         else:
@@ -265,6 +268,8 @@ def main():
 
     ## run t_coffee
     if options.dotcoffee:
+        tcoffee.infile = tmpinfile
+        tmpinfile = tcoffeeoutfile
         if options.dryrun:
             print tcoffee.cline
         else:
@@ -274,6 +279,7 @@ def main():
     
     ## prepare alignments for selenoprofiles
     if options.doprepal:
+        prepsp.infile = tmpinfile
         if options.dryrun:
             print prepsp.cline
         else:

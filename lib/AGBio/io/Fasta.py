@@ -142,10 +142,10 @@ def saveSequences( sequences, outfile ):
     '''Writes the sequences in fasta format in the specified output file.
     '''
     for sequence in sequences:
-            outfile.write( sequence.header )
-            outfile.write('\n')
-            outfile.write( sequence.sequence )
-            outfile.write('\n')
+        outfile.write( sequence.header )
+        outfile.write('\n')
+        outfile.write( sequence.sequence )
+        outfile.write('\n')
 
 def findPattern( sequences, pattern, mode='count' ):
     '''

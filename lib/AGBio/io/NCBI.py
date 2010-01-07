@@ -105,11 +105,14 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                 if 'accession' in ffmt:
                     ffmtDict['accession'] = al.accession
                 for hsp in al.hsps:
+                    okflag = False
                     if hsp.expect <= evalue and not self._excluded(al, excludepatterns):
+                        okflag = True
                         if 'evalue' in ffmt:
                             ffmtDict['evalue'] = hsp.expect
-                line = ' '.join([str(ffmtDict[opt]) for opt in ffmt])
-                writeline(outf, line)
+                if okflag:
+                    line = ' '.join([str(ffmtDict[opt]) for opt in ffmt])
+                    writeline(outf, line)
         outf.close()
 
     def _getGI(self, alignment):
@@ -123,7 +126,7 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
             assert i in allowed
         return ffmt
 
-    def _excluded(al, patterns):
+    def _excluded(self, al, patterns):
         if patterns != None:
             allowed = ('title')
             excluded = False

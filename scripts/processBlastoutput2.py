@@ -48,6 +48,23 @@ def getTopSeqs( filename, threshold ):
                                                           changeFileExtension(filename, 'index.0', 2)],
                                                          stdout=subprocess.PIPE).communicate()[0].split()])
 
+def getTopSeqs2(seqs, maxnumseqs=400, startevalue=10, keepU=True, verbose=False ):
+    topseqs = seqs
+    evalue = startevalue
+    while len(topseqs) > maxnumseqs:
+        if verbose:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '   >>> evalue : 1e' + str(evalue) + '.\n' )
+            sys.stderr.write( '   >>> ' + str(len(topseqs)) + ' Found.\n' )
+        evalue -= 1
+        topseqs = Fasta.SequenceList()
+        for seq in seqs:
+            if (keepU and 'U' in seq.sequence) or\
+                   float(seq.header.split()[-1]) <= float('1e' + str(evalue)):
+                topseqs.append(seq)
+    return topseqs
+                
+
 def main():
 
     parser = optparse.OptionParser()
@@ -102,7 +119,8 @@ def main():
                          evalue = '10',
                          pattern = None,
                          blastversion = 'legacy',
-                         temp = '/tmp/' )
+                         temp = '/tmp/',
+                         maxnumstartseq = None)
 
     (options, args) = parser.parse_args()
 
@@ -110,6 +128,7 @@ def main():
     evalue = options.evalue
     pattern = options.pattern
     temp = options.temp
+    maxnumstartseq = int(options.maxnumstartseq)
 
     blastindexfile = ''.join(( options.outputfilename, '.index.0' ))
     blastfastafile = ''.join(( options.outputfilename, '.fasta.0' ))
@@ -125,14 +144,6 @@ def main():
         fetcher = BlastDbCmdWrapper( entry=[],
                                      db='nr',
                                      outfile=blastfastafile )
-
-##     if options.dofilter:
-##         filterer = UtilityWrappers.FilterWrapper(blastindexfile,
-##                                                  os.path.join(temp, blastindexfile + '.filt'),
-##                                                  inverse=True,
-##                                                  titlematch=('PREDICTED',
-##                                                              'predicted',
-##                                                              'hypothetical'))
 
     ## Parse the blast output file.
     if verbosity >= 1:
@@ -154,13 +165,6 @@ def main():
             sequences = blastparser.extractData( evalue=evalue,
                                                  fmt='header,evalue',
                                                  outfile=blastindexfile )
-            
-    ## Filter out hypothetical and predicted sequences.
-    ##if options.dofilter:
-    ##    if verbosity >= 1:
-    ##    sys.stderr.write( '\n' )
-    ##    sys.stderr.write( '>>> Filtering out unwanted sequences.\n' )
-    ##uniq(blastindexfile)
         
     ## Only keep one copy of a header, the one with the best evalue.
     if verbosity >= 1:
@@ -181,6 +185,37 @@ def main():
         sys.stderr.write( '\n' )
         sys.stderr.write( '>>> Building fasta.0 file.\n' )
     fetcher.run()
+
+    ## Apply final filters : keep only top evalues and U containing until a threshold is reached
+    if maxnumstartseq:
+        if verbosity >= 1:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '>>> Applying final filters on ' + blastfastafile + '.\n' )
+        if verbosity >= 2:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '  >>> Adding evalue to headers.\n' )
+        tmpfullheadfasta = blastfastafile + '.fh'
+        addheaders = AddFullHeadersWrapper(blastfastafile,
+                                           tmpfullheadfasta,
+                                           blastindexfile)
+        addheaders.run()
+        if verbosity >= 2:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '  >>> Loading sequences.\n' )
+        with open(tmpfullheadfasta, 'r') as ff:
+            allseqs = Fasta.loadSequences(ff)
+        if verbosity >= 2:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '  >>> Keeping valid sequences.\n' )
+        print options.maxnumstartseq
+        validseqs = getTopSeqs2(seqs=allseqs,
+                                maxnumseqs=maxnumstartseq,
+                                startevalue=10,
+                                keepU=True,
+                                verbose=verbosity>=3 )
+        keptseqs = ''.join(( options.outputfilename, '.', str(len(validseqs)), '.fasta' ))
+        with open(keptseqs, 'w') as ff:
+            validseqs.save(ff)
 
 
 if __name__ == '__main__':

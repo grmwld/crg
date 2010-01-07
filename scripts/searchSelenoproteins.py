@@ -5,7 +5,7 @@ import sys
 import os
 import optparse
 sys.path.append('/users/rg/agrimaldi/Code/crg/python/libs')
-import AGBio.IO.Fasta as FastaLib
+import AGBio.io.Fasta as FastaLib
 
 
 def findSelenoproteins( sequences ):
