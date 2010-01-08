@@ -6,7 +6,6 @@ import os
 import shutil
 import subprocess
 import optparse
-#sys.path.append('/users/rg/agrimaldi/Code/crg/python/libs')
 from AGBio.Utilities import *
 import AGBio.io.Fasta as Fasta
 import AGBio.UtilityWrappers as UtilityWrappers
@@ -32,24 +31,7 @@ def spDiff( fileA, fileB ):
 def removeGaps( sequence ):
 
         return sequence.replacePattern('-', '')
-
-def getTopSeqs( filename, threshold, minevalue=10 ):
-    num_seq = int(subprocess.Popen(["wc",
-                                    "-l",
-                                    changeFileExtension(filename, 'index.0', 2)],
-                                   stdout=subprocess.PIPE).communicate()[0].split()[0])
-    evalue = 
-    #gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
-    #wcprc = subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout)
-
-    while threshold < num_seq:
-        evalue -= 1
-        gawkprc = subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE)
-        num_seq = int(subprocess.Popen(["wc", "-l"], stdin=gawkprc.stdout, stdout=subprocess.PIPE).communicate()[0].split()[0])
-
-    return ([gi.split('|')[1] for gi in subprocess.Popen(["gawk", "{if ($2 < 1e"+str(evalue)+"){print $1}}", changeFileExtension(filename, 'index.0', 2)], stdout=subprocess.PIPE).communicate()[0].split()])
-
-def getTopSeqs2(indexfile, threshold, fastafile)
+    
 
 def main():
 
@@ -93,11 +75,6 @@ def main():
     parser.add_option( '-p', '--prepare',
                        action='store_true', dest='doprepal', default=False,
                        help='do the prepare_alignment_selenoprofiles step.')
-
-    parser.add_option( '-M', '--max_num_start_seq',
-                       dest='maxnumstartseq',
-                       help='maximum number of sequences in the first alignement to be processed. If set, a new input file with the top sequences ordered by evalue is created and used.',
-                       metavar='NAME' )
 
     parser.add_option( '-A', '--all',
                        action='store_true', dest='doall', default=False,
@@ -147,6 +124,7 @@ def main():
 
     ncore = options.ncore
     verbosity = options.verbosity
+    temp = options.temp
 
     addheaders = UtilityWrappers.AddFullHeadersWrapper(tmpinfile,
                                                        fullheadoutfile,
@@ -202,13 +180,8 @@ def main():
                 sys.stderr.write('\n    >>> Filtering out\n\n')
             filterseqs.run()
     
-    ## Keep the N best sequences based on their evalues
-    ## if options.maxnumstartseq:
-##         seqs = getTopSeqs(infile, int(options.maxnumstartseq), keepU=True)
-##         refetch()
-    ##with open()
-        
     ## run mafft
+    numseqinmafftoutput = 0 
     if options.domafft:
         mafft.infile = tmpinfile
         tmpinfile = mafftoutfile
@@ -218,9 +191,12 @@ def main():
             if verbosity >= 1:
                 sys.stderr.write('\n    >>> Running Mafft\n\n')
             mafft.run()
+            with open(mafftoutfile, 'r') as mfo:
+                seqs = Fasta.loadSequences(mfo)
+                numseqinmafftoutput = len(seqs)
 
     ## run trimal
-    if options.dotrimal:
+    if options.dotrimal and numseqinmafftoutput > 200:
         trimal.infile = tmpinfile
         tmpinfile = trimaloutfile2
         if options.dryrun:
@@ -288,11 +264,11 @@ def main():
             prepsp.run()
 
     ## Add full headers
-    if options.doheaders:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Adding headers\n\n')
-#        addheader.
-#        addheaders.run()
+##     if options.doheaders:
+##         if verbosity >= 1:
+##             sys.stderr.write('\n    >>> Adding headers\n\n')
+##         addheader.
+##         addheaders.run()
 
 if __name__ == '__main__':
     main()
