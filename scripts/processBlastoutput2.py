@@ -40,18 +40,18 @@ def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
     Returns a tuple (sequences, evalue) containing the sequences found and the
     corresponding evalue.
     '''
-    topseqs = seqs
-    evalue = startevalue
-    while len(topseqs) > maxnumseqs:
-        evalue -= 1
-        if verbose:
-            sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
-            sys.stderr.write( '        >>> ' + str(len(topseqs)) + ' Found.\n' )
+    topseqs = Fasta.SequenceList()
+    evalue = startevalue + 1
+    while len(topseqs) > maxnumseqs or evalue == startevalue + 1:
         topseqs = Fasta.SequenceList()
+        evalue -= 1
         for seq in seqs:
             if (pattern and pattern in seq.sequence) or\
                    float(seq.header.split()[-1]) <= float('1e' + str(evalue)):
                 topseqs.append(seq)
+        if verbose:
+            sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
+            sys.stderr.write( '            ' + str(len(topseqs)) + ' matching sequences.\n' )
     return (topseqs, evalue)
                 
 
@@ -208,6 +208,10 @@ def main():
                               str(validseqs[1]),
                               str(len(validseqs[0])),
                               'fasta' ))
+        if verbosity >= 2:
+            sys.stderr.write( '    >>> Found ' + str(len(validseqs[0])) + \
+                              ' sequences with evalue <= 1e' + \
+                              str(validseqs[1]) + '\n' )
         with open(keptseqs, 'w') as ff:
             validseqs[0].save(ff)
 
