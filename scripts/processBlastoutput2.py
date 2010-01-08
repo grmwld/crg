@@ -9,7 +9,7 @@ from AGBio.UtilityWrappers import *
 from AGBio.ncbi.BlastWrappers import *
 
 def uniq(infile):
-    '''Use remove duplicate headers, keeping the one with the lowest evalue.
+    '''Use to remove duplicate headers, keeping the one with the lowest evalue.
     '''
     headict={}
     with open(infile) as ifile:
@@ -23,21 +23,36 @@ def uniq(infile):
     with open(infile, 'w') as ofile:
         for header, evalue in headict.items():
             ofile.write(header + ' ' + evalue + '\n')
-            
-def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, keepU=True, verbose=False ):
+
+def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
+               verbose=False ):
+    '''Function used to find the evalue yielding a number of sequences
+    inferior to the specified threshold.
+
+    Arguments:
+    - `seqs`: the sequences.
+    - `maxnumseqs`: the maximum number of sequences that is needed.
+    - `startevalue`: iterative evalue decrementing should start with this power.
+                     (e.g. startevalue=3 ==> evalue = 1e3)
+    - `keepU`: should any U containing sequence be kept ?
+    - `verbose`: should the function be verbose ?
+
+    Returns a tuple (sequences, evalue) containing the sequences found and the
+    corresponding evalue.
+    '''
     topseqs = seqs
     evalue = startevalue
     while len(topseqs) > maxnumseqs:
+        evalue -= 1
         if verbose:
             sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
             sys.stderr.write( '        >>> ' + str(len(topseqs)) + ' Found.\n' )
-        evalue -= 1
         topseqs = Fasta.SequenceList()
         for seq in seqs:
-            if (keepU and 'U' in seq.sequence) or\
+            if (pattern and pattern in seq.sequence) or\
                    float(seq.header.split()[-1]) <= float('1e' + str(evalue)):
                 topseqs.append(seq)
-    return topseqs
+    return (topseqs, evalue)
                 
 
 def main():
@@ -123,7 +138,8 @@ def main():
     ## Parse the blast output file.
     if verbosity >= 1:
         sys.stderr.write( '\n' )
-        sys.stderr.write( '>>> Parsing blast output.\n' )
+        sys.stderr.write( '>>> Parsing blast output : ' +\
+                          options.inputfilename + '\n' )
     with open(options.inputfilename, 'r') as infile:
         blastparser = PsiBlastXMLParser(infile)
         blastparser.parse()
@@ -168,7 +184,8 @@ def main():
     if maxnumstartseq:
         if verbosity >= 1:
             sys.stderr.write( '\n' )
-            sys.stderr.write( '>>> Applying final filters on ' + blastfastafile + '.\n' )
+            sys.stderr.write( '>>> Applying final filters on ' + \
+                              blastfastafile + '.\n' )
         if verbosity >= 2:
             sys.stderr.write( '    >>> Adding evalue to headers.\n' )
         tmpfullheadfasta = blastfastafile + '.fh'
@@ -185,11 +202,14 @@ def main():
         validseqs = getTopSeqs(seqs=allseqs,
                                maxnumseqs=maxnumstartseq,
                                startevalue=-10,
-                               keepU=True,
+                               pattern='U',
                                verbose=verbosity>=4 )
-        keptseqs = ''.join(( options.outputfilename, '.', str(len(validseqs)), '.fasta' ))
+        keptseqs = '.'.join(( options.outputfilename,
+                              str(validseqs[1]),
+                              str(len(validseqs[0])),
+                              'fasta' ))
         with open(keptseqs, 'w') as ff:
-            validseqs.save(ff)
+            validseqs[0].save(ff)
 
 
 if __name__ == '__main__':
