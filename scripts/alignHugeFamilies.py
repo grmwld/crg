@@ -159,15 +159,15 @@ def main():
 
 
     ## Add full headers
-    if options.doheaders:
-        addheader.infile = tmpinfile
-        tmpinfile = fullheadoutfile
-        if options.dryrun:
-            print addheaders.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Adding headers\n\n')
-            addheaders.run()
+##     if options.doheaders:
+##         addheader.infile = tmpinfile
+##         tmpinfile = fullheadoutfile
+##         if options.dryrun:
+##             print addheaders.cline
+##         else:
+##             if verbosity >= 1:
+##                 sys.stderr.write('\n    >>> Adding headers\n\n')
+##             addheaders.run()
 
     ## Filter out the 'fake' proteins
     if options.dofilter:
@@ -198,7 +198,7 @@ def main():
     ## run trimal
     if options.dotrimal and numseqinmafftoutput > 200:
         trimal.infile = tmpinfile
-        tmpinfile = trimaloutfile2
+        tmpinfile = trimaloutfile1
         if options.dryrun:
             print trimal.cline
         else:
@@ -210,8 +210,9 @@ def main():
         if verbosity >= 1:
             sys.stderr.write('\n    >>> Removing gaps\n\n')
 
-        ti = open(trimaloutfile1, 'r')
-        to = open(trimaloutfile2, 'w')
+        ti = open(tmpinfile, 'r')
+        tmpinfile = trimaloutfile2
+        to = open(tmpinfile, 'w')
 
         si = Fasta.loadSequences(ti)
         ti.close()
@@ -220,27 +221,22 @@ def main():
         ## saves the sequences with no gaps
         for s in si:
             refs.append(removeGaps(s))
-
         Fasta.saveSequences(refs, to)
 
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
+        if options.dotrimal and numseqinmafftoutput > 200:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
+            ## Gather the non intersecting proteins from the 2 files
+            diffSelenoproteins = spDiff( mafftoutfile,
+                                         trimaloutfile1 )
 
-        ## Gather the non intersecting proteins from the 2 files
-        diffSelenoproteins = spDiff( mafftoutfile,
-                                     trimaloutfile1 )
-
-        spDiffr = Fasta.SequenceList()
-
-        ## remove gaps from selenoproteins
-        for s in diffSelenoproteins:
-            spDiffr.append(removeGaps(s))
-
-        ## append to the file the selenoproteins that were not present
-        Fasta.saveSequences(spDiffr, to)
-
+            spDiffr = Fasta.SequenceList()
+            ## remove gaps from selenoproteins
+            for s in diffSelenoproteins:
+                spDiffr.append(removeGaps(s))
+            ## append to the file the selenoproteins that were not present
+            Fasta.saveSequences(spDiffr, to)
         to.close()
-
 
     ## run t_coffee
     if options.dotcoffee:
@@ -252,6 +248,17 @@ def main():
             if verbosity >= 1:
                 sys.stderr.write('\n    >>> Running T_coffee\n\n')
             tcoffee.run()
+
+    ## Add full headers
+    if options.doheaders:
+        addheaders.infile = tmpinfile
+        tmpinfile = fullheadoutfile
+        if options.dryrun:
+            print addheaders.cline
+        else:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Adding headers\n\n')
+            addheaders.run()
     
     ## prepare alignments for selenoprofiles
     if options.doprepal:
@@ -262,13 +269,7 @@ def main():
             if verbosity >= 1:
                 sys.stderr.write('\n    >>> preparing for selenoprofiles\n\n')
             prepsp.run()
-
-    ## Add full headers
-##     if options.doheaders:
-##         if verbosity >= 1:
-##             sys.stderr.write('\n    >>> Adding headers\n\n')
-##         addheader.
-##         addheaders.run()
+            
 
 if __name__ == '__main__':
     main()
