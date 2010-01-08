@@ -24,7 +24,7 @@ def uniq(infile):
         for header, evalue in headict.items():
             ofile.write(header + ' ' + evalue + '\n')
             
-def getTopSeqs2(seqs, maxnumseqs=400, startevalue=10, keepU=True, verbose=False ):
+def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, keepU=True, verbose=False ):
     topseqs = seqs
     evalue = startevalue
     while len(topseqs) > maxnumseqs:
@@ -182,11 +182,11 @@ def main():
             allseqs = Fasta.loadSequences(ff)
         if verbosity >= 2:
             sys.stderr.write( '    >>> Keeping valid sequences.\n' )
-        validseqs = getTopSeqs2(seqs=allseqs,
-                                maxnumseqs=maxnumstartseq,
-                                startevalue=-10,
-                                keepU=True,
-                                verbose=verbosity>=4 )
+        validseqs = getTopSeqs(seqs=allseqs,
+                               maxnumseqs=maxnumstartseq,
+                               startevalue=-10,
+                               keepU=True,
+                               verbose=verbosity>=4 )
         keptseqs = ''.join(( options.outputfilename, '.', str(len(validseqs)), '.fasta' ))
         with open(keptseqs, 'w') as ff:
             validseqs.save(ff)
