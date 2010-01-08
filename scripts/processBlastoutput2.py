@@ -215,6 +215,8 @@ def main():
         with open(keptseqs, 'w') as ff:
             validseqs[0].save(ff)
 
+    sys.stderr.write( '\n' )
+
 
 if __name__ == '__main__':
     main()
