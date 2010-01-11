@@ -49,55 +49,64 @@ def main():
 
     parser.add_option( '-a', '--n_core',
                        dest='ncore',
+                       type='int',
                        help='number of cores to use during the various operations.',
                        metavar='INTEGER' )
 
-    parser.add_option( '-m', '--mafft',
+    parser.add_option( '-M', '--mafft',
                        action='store_true', dest='domafft', default=False,
                        help='do the mafft step.')
     
-    parser.add_option( '-t', '--trimal',
+    parser.add_option( '-T', '--trimal',
                        action='store_true', dest='dotrimal', default=False,
                        help='do the trimal step.')
 
-    parser.add_option( '-c', '--tcoffee',
+    parser.add_option( '-C', '--tcoffee',
                        action='store_true', dest='dotcoffee', default=False,
                        help='do the t_coffee step.')
 
-    parser.add_option( '-d', '--headers',
+    parser.add_option( '-D', '--headers',
                        action='store_true', dest='doheaders', default=False,
                        help='do the addheaders step.')
 
-    parser.add_option( '-f', '--filter',
+    parser.add_option( '-F', '--filter',
                        action='store_true', dest='dofilter', default=False,
                        help='do the filter step.')
 
-    parser.add_option( '-p', '--prepare',
+    parser.add_option( '-P', '--prepare',
                        action='store_true', dest='doprepal', default=False,
                        help='do the prepare_alignment_selenoprofiles step.')
+
+    parser.add_option( '-g', '--tag_threshold',
+                       dest='tagthreshold',
+                       type='float',
+                       help='tag threshold to use if the -P or --prepare is used.',
+                       metavar='FLOAT' )
 
     parser.add_option( '-A', '--all',
                        action='store_true', dest='doall', default=False,
                        help='do all steps.')
 
-    parser.add_option( '-Y', '--dry',
+    parser.add_option( '-y', '--dry',
                        action='store_true', dest='dryrun', default=False,
                        help="Prints the commands without executing them.")
     
-    parser.add_option( '-T', '--temp',
+    parser.add_option( '-t', '--temp',
                        dest='temp',
                        help='set the temp folder to use.',
                        metavar='FOLDER' )
 
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
+                       type='int',
                        help='verbosity level : 0=none ; 1=standard ; 2=detailed ; 3=full',
                        metavar='INTEGER' )
 
 
 
-    parser.set_defaults( verbosity = '1',
-                         ncore = '1',
+    parser.set_defaults( verbosity = 1,
+                         ncore = 1,
+                         tagthreshold = 0.5,
                          temp = '/tmp/')
 
     (options, args) = parser.parse_args()
@@ -150,7 +159,7 @@ def main():
     prepsp = UtilityWrappers.SelenoprofilesPreWrapper(tmpinfile,
                                                       options.outputfilename,
                                                       all=True,
-                                                      tagthreshold=0.8,
+                                                      tagthreshold=options.tagthreshold,
                                                       temp=temp)
 
     if options.dryrun:

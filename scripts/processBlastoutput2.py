@@ -69,8 +69,14 @@ def main():
                        help='base output filename',
                        metavar='FILE' )
 
+    parser.add_option( '-d', '--db',
+                       dest='database',
+                       help='database from which the sequences should be fetched.',
+                       metavar='FILE' )
+
     parser.add_option( '-e', '--evalue',
                        dest='evalue',
+                       type='float',
                        help='e-value threshold.',
                        metavar='FLOAT' )
 
@@ -90,10 +96,11 @@ def main():
 
     parser.add_option( '-M', '--max_num_start_seq',
                        dest='maxnumstartseq',
+                       type='int',
                        help='maximum number of sequences in the first alignement to be' +\
                        'processed. If set, a new input file with the top sequences ordered' +\
                        'by evalue is created and used.',
-                       metavar='NAME' )
+                       metavar='INTEGER' )
     
     parser.add_option( '-T', '--temp',
                        dest='temp',
@@ -102,23 +109,26 @@ def main():
     
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
+                       type='int',
                        help='verbosity level : 0=none ; 1=standard ; 2=detailed ; 3=full',
                        metavar='INTEGER' )
 
-    parser.set_defaults( verbosity = '1',
-                         evalue = '10',
+    parser.set_defaults( verbosity = 1,
+                         database = 'nr',
+                         evalue = 10,
                          pattern = None,
                          blastversion = 'legacy',
                          temp = '/tmp/',
-                         maxnumstartseq = None)
+                         maxnumstartseq = None )
 
     (options, args) = parser.parse_args()
 
-    verbosity = int(options.verbosity)
+    verbosity = options.verbosity
+    database = options.database
     evalue = options.evalue
     pattern = options.pattern
     temp = options.temp
-    maxnumstartseq = int(options.maxnumstartseq)
+    maxnumstartseq = options.maxnumstartseq
 
     blastindexfile = ''.join(( options.outputfilename, '.index.0' ))
     blastfastafile = ''.join(( options.outputfilename, '.fasta.0' ))
@@ -128,11 +138,11 @@ def main():
 
     if options.blastversion == 'legacy':
         fetcher = FastaCmdWrapper( entry=[],
-                                   db='/seq/databases/nr_uncompressed/nr',
+                                   db=database,
                                    outfile=blastfastafile )
     else:
         fetcher = BlastDbCmdWrapper( entry=[],
-                                     db='nr',
+                                     db=database,
                                      outfile=blastfastafile )
 
     ## Parse the blast output file.
