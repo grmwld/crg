@@ -50,6 +50,36 @@ class SequenceList(list):
                     usequences.append(seq)
         return usequences
 
+    def findPositions(self, aaa=None, strict=False):
+        '''Finds all positions of U in the alignment.
+        '''
+        aa = list(aaa)
+#        aa.append('!')
+        print aa
+        output = {}
+        tmppos = {}
+        for i in aa:
+            output[i] = {}
+            tmppos[i] = []
+        for seq in self:
+            for i in aa:
+                tmppos[i] = []
+            for i, pos in enumerate(seq.sequence):
+                if pos in aa:
+                    tmppos[pos].append(i)
+            for t in tmppos:
+                if tuple(tmppos[t]) in output[t]:
+#                    if tmppos[t]:
+                        output[t][tuple(tmppos[t])].append(seq)
+#                    else:
+#                        output['!'][tuple(tmppos[t])].append(seq)
+                else:
+#                    if tmppos[t]:
+                        output[t][tuple(tmppos[t])] = [seq]
+#                    else:
+#                        output['!'][tuple(tmppos[t])] = [seq]
+        return output
+
     def symetric_difference(self, other, method='formated'):
         '''Find elements in either the list or other but not both.
         '''
@@ -174,3 +204,24 @@ def replacePattern( sequence, pattern, replacement ):
         else:
             tmp += c
     return Sequence(sequence.header, tmp)
+
+
+if __name__ == '__main__':
+
+    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
+        ss = loadSequences(ff)
+    uu = ss.findPositions(('U'))
+
+    #print uu
+    count = 0
+    for i in uu:
+        for j in uu[i]:
+            if len(uu[i][j]) > 20:
+                print i, j, len(uu[i][j])
+            count += len(uu[i][j])
+
+    print count, len(ss)
+    for i in uu['U'][(1687, 4679)]:
+        print i.header
+    for i in uu['U'][(1687, 4926)]:
+        print i.header
