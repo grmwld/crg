@@ -391,7 +391,7 @@ class SelenoprofilesPreWrapper(UtilityWrapper):
         '''Updates the commandline based on the options.
         Makes sure that the infile option comes first.
         '''
-        self.cline = ' '.join((self.utilitypath, self.infile))
+        self.cline = ' '.join((self.utilitypath, self.infile, '-f'))
         for opt in self.keys():
             if opt != 'infile':
                 self.cline += (' ' + self.getClineOpt(opt))
