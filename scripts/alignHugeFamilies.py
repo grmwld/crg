@@ -69,6 +69,11 @@ def main():
                        action='store_true', dest='doheaders', default=False,
                        help='do the addheaders step.')
 
+    parser.add_option( '-p', '--patternfile',
+                       dest='patternfile',
+                       help='pattern file to use if the -D option is used.',
+                       metavar='FILE' )
+
     parser.add_option( '-F', '--filter',
                        action='store_true', dest='dofilter', default=False,
                        help='do the filter step.')
@@ -128,7 +133,8 @@ def main():
     trimaloutfile = trimaloutfile1
     tcoffeeoutfile = ''.join((options.outputfilename, '_tcoffee.fasta'))
     fullheadoutfile = ''.join((options.outputfilename, '.det.fasta'))
-    patternfile = ''.join(('.'.join(options.inputfilename.split('.')[:2]), '.index.0'))
+#    patternfile = ''.join(('.'.join(options.inputfilename.split('.')[:2]), '.index.0'))
+    patternfile = options.patternfile
     filteroutfile = ''.join((options.outputfilename, '.filt.fasta'))
 
     ncore = options.ncore
@@ -215,7 +221,7 @@ def main():
                 sys.stderr.write('\n    >>> Running Trimal\n\n')
             trimal.run()
 
-    if not options.dryrun:
+    if not options.dryrun and options.dotcoffee:
         if verbosity >= 1:
             sys.stderr.write('\n    >>> Removing gaps\n\n')
 
