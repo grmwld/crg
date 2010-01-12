@@ -70,15 +70,6 @@ class SequenceList(list):
             sys.exit("Comparision method sould be one of ('formated', 'raw')")
         return seqlist
 
-##     def save(self, outfile):
-##         '''Writes the sequences in fasta format in the specified output file.
-##         '''
-##         for sequence in self:
-##             outfile.write( sequence.header )
-##             outfile.write('\n')
-##             outfile.write( sequence.sequence )
-##             outfile.write('\n')
-
     def prints(self, outfile=sys.stdout, length=80):
         for seq in self:
             seq.prints(outfile, length)
@@ -94,13 +85,63 @@ class Alignment(SequenceList):
         for i, seq in enumerate(self):
             for sseq in self[i:]:
                 if len(seq) != len(sseq):
-                    raise Exception()
-        self.length = len(self[0].sequence)
+                    raise ValueError('Sequences lengths in alignment differ.')
+        self.__size = len(self[0])
         self.profiles=[]
 
-    def getProfiles(self):
-        for pos in range():
-            pass
+    @property
+    def size(self):
+        return self.__size
+
+    def purgeFromFalseX(self, threshold=0.5, absolutethreshold=0, main=None, include=None, exclude='$'):
+        '''Discard from this alignment the sequences that do not align properly.
+
+        Sequences are discarded if, for a position of the main symbol,
+        the fraction of the total number of sequences containing either
+        that symbol or an equivalent one is lower than a given threshold.
+
+        Arguments:
+        - `threshold`: the threshold under which a sequence is excluded.
+        - `main`: the main symbol to consider.
+        - `include`: all symbols that should be considered as equivalent to
+                     main, thus contributing to increase the threshold.
+        - `exclude`: all symbols that should contribute to decrease the threshold.
+                     if not specified, defaults to any character other
+                     than `main` or `include`.
+        '''
+        if type(main) != type('') and len(main) != 1:
+            raise TypeError('The main symbol should be a single character.')
+        outal = Alignment(self)
+        mainpos = self.findPositions([main] + [include] + [exclude], True)
+        if len(mainpos[main]) <= 1:
+            return self
+        else:
+            for xpos in [p for p in mainpos[main] if p != ()]:
+                icount = len(mainpos[main][xpos])
+                ecount = 0
+                for isymb in include:
+                    try:
+                        icount += len(mainpos[isymb][xpos])
+                    except KeyError:
+                        pass
+                for esymb in exclude:
+                    try:
+                        ecount += len(mainpos[esymb][xpos])
+                    except KeyError:
+                        pass
+                irate = float(icount)/len(self)
+                erate = float(ecount)/len(self)
+                if erate == 0:
+                    erate = 1
+                print '---', xpos, icount, irate, ecount, erate
+                if irate/erate < threshold \
+                       and len(mainpos[main][xpos]) < absolutethreshold:
+                    for al in mainpos[main][xpos]:
+                        try:
+                            outal.remove(al)
+                        except ValueError:
+                            pass
+        return outal
 
     def findPositions(self, aaa=None, redundant=True):
         '''Finds all positions of U in the alignment.
@@ -169,15 +210,15 @@ class Sequence(object):
         return self.__sequence
 
     def __eq__(self, other):
-        ss = ''.join(self.sequence.split('\n'))
-        os = ''.join(other.sequence.split('\n'))
+        ss = ''.join(self.sequence.split())
+        os = ''.join(other.sequence.split())
         if ss == os:
             return True
         return False
 
     @property
     def rawSequence(self):
-        '''Returns the sequence free of any gaps and blanj characters.
+        '''Returns the sequence free of any gaps and blank characters.
         '''
         return ''.join(self.replacePattern('-', '').sequence.split('\n'))
 
@@ -260,19 +301,37 @@ def replacePattern( sequence, pattern, replacement ):
 
 if __name__ == '__main__':
 
-
-    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
+#    with open('/users/rg/mmariotti/dio_filtered_no_peroxid_no_PrxU.no_DI1_vars.fasta', 'r') as ff:
+#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test_mafft.fasta', 'r') as ff:
+#    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
+#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.profile.aligned.fasta', 'r') as ff:
+    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.det.fasta', 'r') as ff:
         aa = loadSequences(ff)
     ss = Alignment(aa)
     uu = ss.findPositions(('U','C','-'), True)
+    print len(ss)
+    oo = ss.purgeFromFalseX(0.4, 5, 'U', 'C', '-')
+    print len(ss), len(oo)
+
+    uu = oo.findPositions(('U','C','-'), True)
 
     count = 0
     for i in uu:
         for j in uu[i]:
-            if len(uu[i][j]) > 200:
+            if len(uu[i][j]) > 500:
                 print i, j, len(uu[i][j])
             count += len(uu[i][j])
     
     print count, len(ss)
 
-    print len(uu['U'][(1687,)]), len(uu['C'][(1687,)]), len(uu['-'][(1687,)])
+    for i in uu['U']:
+        sys.stdout.write(str(i) + ' ')
+        for j in uu:
+            try:
+                sys.stdout.write(str(j)+': ')
+                sys.stdout.write(str(len(uu[j][i])) + ' ; ')
+            except KeyError:
+                sys.stdout.write('0 ; ')
+        sys.stdout.write('\n')
+        
+##     print len(uu['U'][(1687,)]), len(uu['C'][(1687,)]), len(uu['-'][(1687,)])
