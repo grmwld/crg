@@ -4,6 +4,7 @@ import os
 import sys
 import optparse
 import AGBio.io.Fasta as Fasta
+from AGBio.Utilities import getch
 
 def main():
 
@@ -34,6 +35,10 @@ def main():
                        help='prefilters all sequences that have the given pattern in their name and throw them.',
                        metavar='PATTERN' )
 
+    parser.add_option( '-b', '--autothrow_abscents',
+                       action='store_true', dest='atabscent', default=False,
+                       help='Throw all sequences not present in the alignment provided.')
+
     parser.set_defaults( keepprefilter = False,
                          throwprefilter = False,
                          alfilename = False )
@@ -54,9 +59,9 @@ def main():
     if options.throwprefilter:
         tpatterns = options.throwprefilter.split(',')
 
-    kept_seq = []
-    thrown_seq = []
-    man_check_list = []
+    kept_seq = Fasta.SequenceList()
+    thrown_seq = Fasta.SequenceList()
+    man_check_list = Fasta.SequenceList()
 
     for seq in sequences:
         kept = False
@@ -74,19 +79,38 @@ def main():
         if not kept and not thrown:
             man_check_list.append(seq)
 
-    for idx, seq in enumerate(man_check_list):
+    idx = 0
+    while idx < len(man_check_list):
+        seq = man_check_list[idx]
         gi = seq.header.split('|')[1]
         choice = 'r'
         decided = False
         print seq.header
         while not decided:
-            choice = raw_input('# '+str(idx)+' / '+str(len(man_check_list))+' -- Keep ? ')
-            if choice == 'y':
+            print len(kept_seq), len(thrown_seq)
+            choice = getch('# '+str(idx+1)+' / '+str(len(man_check_list))+' -- Keep ? [Y/n]')
+            if choice == 'b':
+                if idx > 0:
+                    idx -= 1
+                    seq = man_check_list[idx]
+                    gi = seq.header.split('|')[1]
+                    print seq.header
+                    try:
+                        thrown_seq.remove(seq)
+                    except:
+                        pass
+                    try:
+                        kept_seq.remove(seq)
+                    except:
+                        pass
+            elif choice in ('y', '\n'):
                 kept_seq.append(seq)
                 decided = True
+                idx += 1
             elif choice == 'n':
                 thrown_seq.append(seq)
                 decided = True
+                idx += 1
             elif choice == 's':
                 os.system('fetch_seq.g -v TITLE="'+gi+'" -v ALL=1 '+options.inputfilename )
             elif choice == 'd' and options.alfilename:
@@ -102,22 +126,33 @@ def main():
                             sys.stdout.write('0 ; ')
                     sys.stdout.write('\n')
                 print
+                tmpseq = None
                 for seqal in alignment:
                     if seqal.header == seq.header:
                         tmpseq = seqal
-                tmppos = [i for i, x in enumerate(tmpseq.sequence) if x == 'U']
-                print 'In the alignment provided :'
-                print '    U :', tmppos
-                print '    U in those positions :', [len(rdetail['U'][(l,)]) for l in tmppos]
-                print '    C in those positions:', [len(rdetail['C'][(l,)]) for l in tmppos]
-                print '    - in those positions:', [len(rdetail['-'][tuple((l,))]) for l in tmppos]
+                if tmpseq:
+                    tmppos = [i for i, x in enumerate(tmpseq.sequence) if x == 'U']
+                    print 'In the sequence provided :'
+                    print '    U :', tmppos
+                    print '    U in those positions :', [len(rdetail['U'][(l,)]) for l in tmppos]
+                    print '    C in those positions:', [len(rdetail['C'][(l,)]) for l in tmppos]
+                    print '    - in those positions:', [len(rdetail['-'][tuple((l,))]) for l in tmppos]
+                    print
+                    print '    Symbols present at the positions of each U :'
+                    for pos in [p for p in rdetail['U'] if p != ()]:
+                        spos = str(pos[0])
+                        print '        Position :', spos, '---', tmpseq.sequence[int(spos)]
+                else:
+                    print 'Not present in the alignment provided'
+                print
             elif choice == 'q':
+                cc = 'r'
                 while cc not in ('y', 'n'):
-                    cc = raw_input('Manual quit. Would you like to save your changes ? ')
+                    cc = raw_input('Manual quit. Would you like to save your changes ? [y/N]')
                     if cc in 'y':
                         pass
                     if cc in 'n':
-                        pass
+                        sys.exit('Quiting without saving.')
             else:
                 print 'Wrong command'
 
