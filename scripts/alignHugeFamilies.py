@@ -3,6 +3,7 @@
 
 import sys
 import os
+import time
 import shutil
 import subprocess
 import optparse
@@ -41,6 +42,11 @@ def main():
                        dest='inputfilename',
                        help='file containing the alignments that will be used to build the PSSM using prepare_alignment_selenoprofiles.py.',
                        metavar='FILE' )
+
+    parser.add_option( '-r', '--datadir',
+                       dest='datadir',
+                       help='directory containing, for each familly FAM, a directory FAM.blast and a directory FAM.selenoprofiles.prep',
+                       metavar='DIR' )
 
     parser.add_option( '-o', '--outputfile',
                        dest='outputfilename',
@@ -112,7 +118,8 @@ def main():
     parser.set_defaults( verbosity = 1,
                          ncore = 1,
                          tagthreshold = 0.5,
-                         temp = '/tmp/')
+                         temp = '/tmp/',
+                         patternfile = 'None' )
 
     (options, args) = parser.parse_args()
 
@@ -186,6 +193,7 @@ def main():
 
     ## Filter out the 'fake' proteins
     if options.dofilter:
+        time.sleep(0.5)
         filterseqs.infile = tmpinfile
         tmpinfile = filteroutfile
         if options.dryrun:
@@ -198,6 +206,7 @@ def main():
     ## run mafft
     numseqinmafftoutput = 0 
     if options.domafft:
+        time.sleep(0.5)
         mafft.infile = tmpinfile
         tmpinfile = mafftoutfile
         if options.dryrun:
@@ -212,6 +221,7 @@ def main():
 
     ## run trimal
     if options.dotrimal and numseqinmafftoutput > 200:
+        time.sleep(0.5)
         trimal.infile = tmpinfile
         tmpinfile = trimaloutfile1
         if options.dryrun:
@@ -255,6 +265,7 @@ def main():
 
     ## run t_coffee
     if options.dotcoffee:
+        time.sleep(0.5)
         tcoffee.infile = tmpinfile
         tmpinfile = tcoffeeoutfile
         if options.dryrun:
@@ -266,6 +277,7 @@ def main():
 
     ## Add full headers
     if options.doheaders:
+        time.sleep(0.5)
         addheaders.infile = tmpinfile
         tmpinfile = fullheadoutfile
         if options.dryrun:
@@ -277,6 +289,7 @@ def main():
     
     ## prepare alignments for selenoprofiles
     if options.doprepal:
+        time.sleep(0.5)
         prepsp.infile = tmpinfile
         if options.dryrun:
             print prepsp.cline
@@ -287,4 +300,7 @@ def main():
             
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit('manual exit')
