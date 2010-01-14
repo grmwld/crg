@@ -61,8 +61,8 @@ def main():
 
     parser.add_option( '-i', '--inputfile',
                        dest='inputfilename',
-                       help='fasta file in which selenoproteins should be looked for.',
-                       metavar='FILE' )
+                       help='blast output file, in xml format.',
+                       metavar='FILE.xml' )
 
     parser.add_option( '-o', '--outputfile',
                        dest='outputfilename',
