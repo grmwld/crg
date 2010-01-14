@@ -80,11 +80,6 @@ def main():
                        help='e-value threshold.',
                        metavar='FLOAT' )
 
-    parser.add_option( '-p', '--pattern',
-                       dest='pattern',
-                       help='pattern to look for in sequences.',
-                       metavar='REGEX')
-
     parser.add_option( '-b', '--blast_version',
                        dest='blastversion',
                        help='set the blast version to use, either `legacy` or `plus`.',
@@ -102,6 +97,11 @@ def main():
                        'by evalue is created and used.',
                        metavar='INTEGER' )
     
+    parser.add_option( '-k', '--keep_U',
+                       action='store_true', dest='keepu', default=False,
+                       help='Should U containing sequences be kept regardless of their evalues ?.'+\
+                       'Use in conjunction of -M')
+
     parser.add_option( '-T', '--temp',
                        dest='temp',
                        help='set the temp folder to use.',
@@ -209,10 +209,13 @@ def main():
             allseqs = Fasta.loadSequences(ff)
         if verbosity >= 2:
             sys.stderr.write( '    >>> Keeping valid sequences.\n' )
+        tmppat = None
+        if options.keepu:
+            tmppat = 'U'
         validseqs = getTopSeqs(seqs=allseqs,
                                maxnumseqs=maxnumstartseq,
                                startevalue=-10,
-                               pattern='U',
+                               pattern=tmppat,
                                verbose=verbosity>=4 )
         keptseqs = '.'.join(( options.outputfilename,
                               str(validseqs[1]),
