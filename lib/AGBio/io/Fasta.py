@@ -82,9 +82,11 @@ class Alignment(SequenceList):
         '''
         '''
         SequenceList.__init__(self, sequences)
-        for i, seq in enumerate(self):
+        for i in range(len(self)):
+            tmp = self.pop(i)
+            self.insert(i, AlSequence(tmp.header, tmp.sequence))
             for sseq in self[i:]:
-                if len(seq) != len(sseq):
+                if len(self[i]) != len(sseq):
                     raise ValueError('Sequences lengths in alignment differ.')
         self.__size = len(self[0])
         self.profiles=[]
@@ -192,8 +194,8 @@ class Sequence(object):
     '''Class representing a sequence
     '''
     def __init__(self, header, sequence):
-        self.__header = header
-        self.__sequence = ''.join(sequence.split())
+        self._header = header
+        self._sequence = ''.join(sequence.split())
 
     def __str__(self):
         return str([self.header, self.sequence])
@@ -203,11 +205,11 @@ class Sequence(object):
 
     @property
     def header(self):
-        return self.__header
+        return self._header
 
     @property
     def sequence(self):
-        return self.__sequence
+        return self._sequence
 
     def __eq__(self, other):
         ss = ''.join(self.sequence.split())
@@ -241,6 +243,19 @@ class Sequence(object):
         for buf in range(0, len(self), llength):
             outfile.write(self.sequence[buf:buf+llength])
             outfile.write('\n')
+
+
+class AlSequence(Sequence):
+    '''Class representing a sequence of an alignement.
+    '''
+    def __init__(self, header, sequence):
+        Sequence.__init__(self, header, sequence)
+
+    def getSeqWithNoGaps(self):
+        '''Returns a Sequence object, devoid of gaps.
+        '''
+        return self.replacePattern('-', '')
+
 
 def loadSequences( infile ):
     '''
@@ -305,7 +320,8 @@ if __name__ == '__main__':
 #    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test_mafft.fasta', 'r') as ff:
 #    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
 #    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.profile.aligned.fasta', 'r') as ff:
-    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.det.fasta', 'r') as ff:
+#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.det.fasta', 'r') as ff:
+    with open('/users/rg/agrimaldi/Data/gos/full/selw_like.selenoprofiles.prep/selw_like.det.fasta', 'r') as ff:
         aa = loadSequences(ff)
     ss = Alignment(aa)
     uu = ss.findPositions(('U','C','-'), True)
