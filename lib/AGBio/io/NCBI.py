@@ -109,7 +109,7 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                     okflag = False
                     if (hsp.expect <= evalue \
                         and (not self._match(al, excludepatterns)) \
-                        #and (includepatternsiff and self._match(al, includepatternsiff)) \
+                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
                         or (includepatterns and self._match(al, includepatterns)) \
                         ):
                         okflag = True
