@@ -53,7 +53,13 @@ def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
             sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
             sys.stderr.write( '            ' + str(len(topseqs)) + ' matching sequences.\n' )
     return (topseqs, evalue)
-                
+
+def fmtOptPat(param, args):
+    '''format the patterns.
+    '''
+    if args:
+        return tuple([tuple((param, arg)) for arg in args.split(',')])
+    return None
 
 def main():
 
@@ -89,6 +95,16 @@ def main():
                        action='store_true', dest='dofilter', default=False,
                        help='do the filter step.')
 
+    parser.add_option( '-p', '--keep_patterns_iff',
+                       dest='keeppatiff',
+                       help='Keep only if patterns match exactly. The patterns should be coma seperated.',
+                       metavar='pat1,pat2,pat3' )
+
+    parser.add_option( '-q', '--keep_patterns',
+                       dest='keeppat',
+                       help='Keep patterns that match exactly, no matter what. The patterns should be coma seperated.',
+                       metavar='pat1,pat2,pat3' )
+                       
     parser.add_option( '-M', '--max_num_start_seq',
                        dest='maxnumstartseq',
                        type='int',
@@ -116,7 +132,7 @@ def main():
     parser.set_defaults( verbosity = 1,
                          database = 'nr',
                          evalue = 10,
-                         pattern = None,
+                         keeppat = None,
                          blastversion = 'legacy',
                          temp = '/tmp/',
                          maxnumstartseq = None )
@@ -126,7 +142,6 @@ def main():
     verbosity = options.verbosity
     database = options.database
     evalue = options.evalue
-    pattern = options.pattern
     temp = options.temp
     maxnumstartseq = options.maxnumstartseq
 
@@ -159,6 +174,8 @@ def main():
             sequences = blastparser.extractData( evalue=evalue,
                                                  fmt='header,evalue',
                                                  outfile=blastindexfile,
+                                                 includepatternsiff=fmtOptPat('title', options.keeppatiff),
+                                                 includepatterns=fmtOptPat('title', options.keeppat),
                                                  excludepatterns=(('title', 'hypothetical'),
                                                                   ('title', 'predicted'),
                                                                   ('title', 'PREDICTED')))
@@ -183,7 +200,7 @@ def main():
             entries.append(line.split('|')[1])
     fetcher.entry = entries
 
-    ## Fetch the sequences from the local databases
+    ## Fetch the sequences from the local databases.
     ## TODO : Fetch failed from the web.
     if verbosity >= 1:
         sys.stderr.write( '\n' )

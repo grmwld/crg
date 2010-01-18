@@ -73,7 +73,8 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
     def parse(self):
         self.results = NCBIXML.parse(self.blastoutput)
 
-    def extractData(self, evalue=10, fmt=None, ALL=False, outfile=sys.stdout, excludepatterns=None):
+    def extractData(self, evalue=10, fmt=None, ALL=False, outfile=sys.stdout,
+                    includepatternsiff=None, includepatterns=None, excludepatterns=None):
         """Extract data of interest from the parsed blast output.
         
         Arguments:
@@ -106,7 +107,11 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                     ffmtDict['accession'] = al.accession
                 for hsp in al.hsps:
                     okflag = False
-                    if hsp.expect <= evalue and not self._excluded(al, excludepatterns):
+                    if (hsp.expect <= evalue \
+                        and (not self._match(al, excludepatterns)) \
+                        #and (includepatternsiff and self._match(al, includepatternsiff)) \
+                        or (includepatterns and self._match(al, includepatterns)) \
+                        ):
                         okflag = True
                         if 'evalue' in ffmt:
                             ffmtDict['evalue'] = hsp.expect
@@ -136,4 +141,14 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                 if p[1] in getattr(al, p[0]):
                     return True
         return False
-        
+
+    def _match(self, al, patterns):
+        if patterns != None:
+            allowed = ('title')
+            excluded = False
+            for p in patterns:
+                assert p[0] in allowed, p[0]
+                assert p[0] in al.__dict__
+                if p[1] in getattr(al, p[0]):
+                    return True
+        return False
