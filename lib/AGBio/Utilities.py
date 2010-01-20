@@ -3,6 +3,7 @@
 
 import os
 import sys
+import random
 
 def getBaseName(filename, numextension=1):
     return '.'.join(filename.split('.')[:-numextension])
@@ -28,3 +29,9 @@ class _GetchUnix:
 
 
 getch = _GetchUnix()
+
+def genTempfilename(dirr='./', prefix=''):
+    '''Generate temporary filename
+    '''
+    hashn = str(random.getrandbits(128))
+    return os.path.join(dirr, prefix + hashn)

@@ -71,7 +71,7 @@ def main():
                        action='store_true', dest='dotcoffee', default=False,
                        help='do the t_coffee step.')
 
-    parser.add_option( '-D', '--headers',
+    parser.add_option( '-B', '--headers',
                        action='store_true', dest='doheaders', default=False,
                        help='do the addheaders step.')
 
@@ -98,10 +98,14 @@ def main():
                        action='store_true', dest='doall', default=False,
                        help='do all steps.')
 
-    parser.add_option( '-y', '--dry',
+    parser.add_option( '-Y', '--dry',
                        action='store_true', dest='dryrun', default=False,
                        help="Prints the commands without executing them.")
     
+    parser.add_option( '-D', '--debug',
+                       action='store_true', dest='debug', default=False,
+                       help="Debug mode. Nothing is cleaned.")
+
     parser.add_option( '-t', '--temp',
                        dest='temp',
                        help='set the temp folder to use.',
@@ -130,9 +134,14 @@ def main():
         options.dotrimal = True
         options.dotcoffee = True
         
-    
     infile = options.inputfilename
-    tmpinfile = infile
+    tmpinitfilename = genTempfilename(options.temp, 'ungapped_')
+    with open(infile, 'r') as iff:
+        tmpseqs = Fasta.loadSequences(iff)
+    with open(tmpinitfilename, 'w') as ugf:
+        for seq in tmpseqs:
+            removeGaps(seq).prints(ugf)
+    tmpinfile = tmpinitfilename
 
     mafftoutfile = ''.join((options.outputfilename, '_mafft.fasta'))
     trimaloutfile1 = ''.join((options.outputfilename, '_trimmed_native.fasta'))
@@ -175,132 +184,138 @@ def main():
                                                       tagthreshold=options.tagthreshold,
                                                       temp=temp)
 
-    if options.dryrun:
-        print('\nThis is a dry run. Relaunch the command without the option -Y to do the actual stuff.\n')
+    try:
 
-
-
-    ## Add full headers
-##     if options.doheaders:
-##         addheader.infile = tmpinfile
-##         tmpinfile = fullheadoutfile
-##         if options.dryrun:
-##             print addheaders.cline
-##         else:
-##             if verbosity >= 1:
-##                 sys.stderr.write('\n    >>> Adding headers\n\n')
-##             addheaders.run()
-
-    ## Filter out the 'fake' proteins
-    if options.dofilter:
-        time.sleep(0.5)
-        filterseqs.infile = tmpinfile
-        tmpinfile = filteroutfile
         if options.dryrun:
-            print filterseqs.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Filtering out\n\n')
-            filterseqs.run()
-    
-    ## run mafft
-    numseqinmafftoutput = 0 
-    if options.domafft:
-        time.sleep(0.5)
-        mafft.infile = tmpinfile
-        tmpinfile = mafftoutfile
-        if options.dryrun:
-            print mafft.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Running Mafft\n\n')
-            mafft.run()
-            with open(mafftoutfile, 'r') as mfo:
-                seqs = Fasta.loadSequences(mfo)
-                numseqinmafftoutput = len(seqs)
+            print('\nThis is a dry run. Relaunch the command without the option -Y to do the actual stuff.\n')
 
-    ## run trimal
-    if options.dotrimal and numseqinmafftoutput > 200:
-        time.sleep(0.5)
-        trimal.infile = tmpinfile
-        tmpinfile = trimaloutfile1
-        if options.dryrun:
-            print trimal.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Running Trimal\n\n')
-            trimal.run()
 
-    if not options.dryrun and options.dotcoffee:
-        if verbosity >= 1:
-            sys.stderr.write('\n    >>> Removing gaps\n\n')
 
-        ti = open(tmpinfile, 'r')
-        tmpinfile = trimaloutfile2
-        to = open(tmpinfile, 'w')
+        ## Add full headers
+    ##     if options.doheaders:
+    ##         addheader.infile = tmpinfile
+    ##         tmpinfile = fullheadoutfile
+    ##         if options.dryrun:
+    ##             print addheaders.cline
+    ##         else:
+    ##             if verbosity >= 1:
+    ##                 sys.stderr.write('\n    >>> Adding headers\n\n')
+    ##             addheaders.run()
 
-        si = Fasta.loadSequences(ti)
-        ti.close()
-        refs = Fasta.SequenceList()
+        ## Filter out the 'fake' proteins
+        if options.dofilter:
+            time.sleep(0.5)
+            filterseqs.infile = tmpinfile
+            tmpinfile = filteroutfile
+            if options.dryrun:
+                print filterseqs.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Filtering out\n\n')
+                filterseqs.run()
 
-        ## saves the sequences with no gaps
-        for s in si:
-            refs.append(removeGaps(s))
-        Fasta.saveSequences(refs, to)
+        ## run mafft
+        numseqinmafftoutput = 0 
+        if options.domafft:
+            time.sleep(0.5)
+            mafft.infile = tmpinfile
+            tmpinfile = mafftoutfile
+            if options.dryrun:
+                print mafft.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Running Mafft\n\n')
+                mafft.run()
+                with open(mafftoutfile, 'r') as mfo:
+                    seqs = Fasta.loadSequences(mfo)
+                    numseqinmafftoutput = len(seqs)
 
+        ## run trimal
         if options.dotrimal and numseqinmafftoutput > 200:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
-            ## Gather the non intersecting proteins from the 2 files
-            diffSelenoproteins = spDiff( mafftoutfile,
-                                         trimaloutfile1 )
+            time.sleep(0.5)
+            trimal.infile = tmpinfile
+            tmpinfile = trimaloutfile1
+            if options.dryrun:
+                print trimal.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Running Trimal\n\n')
+                trimal.run()
 
-            spDiffr = Fasta.SequenceList()
-            ## remove gaps from selenoproteins
-            for s in diffSelenoproteins:
-                spDiffr.append(removeGaps(s))
-            ## append to the file the selenoproteins that were not present
-            Fasta.saveSequences(spDiffr, to)
-        to.close()
+        if not options.dryrun and options.dotcoffee and options.dotrimal:
+            if verbosity >= 1:
+                sys.stderr.write('\n    >>> Removing gaps\n\n')
 
-    ## run t_coffee
-    if options.dotcoffee:
-        time.sleep(0.5)
-        tcoffee.infile = tmpinfile
-        tmpinfile = tcoffeeoutfile
-        if options.dryrun:
-            print tcoffee.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Running T_coffee\n\n')
-            tcoffee.run()
+            ti = open(tmpinfile, 'r')
+            tmpinfile = trimaloutfile2
+            to = open(tmpinfile, 'w')
 
-    ## Add full headers
-    if options.doheaders:
-        time.sleep(0.5)
-        addheaders.infile = tmpinfile
-        tmpinfile = fullheadoutfile
-        if options.dryrun:
-            print addheaders.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> Adding headers\n\n')
-            addheaders.run()
-    
-    ## prepare alignments for selenoprofiles
-    if options.doprepal:
-        time.sleep(0.5)
-        prepsp.infile = tmpinfile
-        if options.dryrun:
-            print prepsp.cline
-        else:
-            if verbosity >= 1:
-                sys.stderr.write('\n    >>> preparing for selenoprofiles\n\n')
-            prepsp.run()
-            
+            si = Fasta.loadSequences(ti)
+            ti.close()
+            refs = Fasta.SequenceList()
+
+            ## saves the sequences with no gaps
+            for s in si:
+                refs.append(removeGaps(s))
+            Fasta.saveSequences(refs, to)
+
+            if options.dotrimal and numseqinmafftoutput > 200:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Adding ommited selenoproteins\n')
+                ## Gather the non intersecting proteins from the 2 files
+                diffSelenoproteins = spDiff( mafftoutfile,
+                                             trimaloutfile1 )
+
+                spDiffr = Fasta.SequenceList()
+                ## remove gaps from selenoproteins
+                for s in diffSelenoproteins:
+                    spDiffr.append(removeGaps(s))
+                ## append to the file the selenoproteins that were not present
+                Fasta.saveSequences(spDiffr, to)
+            to.close()
+
+        ## run t_coffee
+        if options.dotcoffee:
+            time.sleep(0.5)
+            tcoffee.infile = tmpinfile
+            tmpinfile = tcoffeeoutfile
+            if options.dryrun:
+                print tcoffee.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Running T_coffee\n\n')
+                tcoffee.run()
+
+        ## Add full headers
+        if options.doheaders:
+            time.sleep(0.5)
+            addheaders.infile = tmpinfile
+            tmpinfile = fullheadoutfile
+            if options.dryrun:
+                print addheaders.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> Adding headers\n\n')
+                addheaders.run()
+
+        ## prepare alignments for selenoprofiles
+        if options.doprepal:
+            time.sleep(0.5)
+            prepsp.infile = tmpinfile
+            if options.dryrun:
+                print prepsp.cline
+            else:
+                if verbosity >= 1:
+                    sys.stderr.write('\n    >>> preparing for selenoprofiles\n\n')
+                prepsp.run()
+
+    except KeyboardInterrupt:
+        sys.exit('manual exit.')
+    finally:
+        if not options.debug:
+            if verbosity >= 2:
+                sys.stderr.write('\n    >>> Removing temporary file ' + tmpinitfilename +'\n\n')
+            os.remove(tmpinitfilename)
 
 if __name__ == '__main__':
-    try:
         main()
-    except KeyboardInterrupt:
-        sys.exit('manual exit')
