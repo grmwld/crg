@@ -194,7 +194,7 @@ class Sequence(object):
     '''Class representing a sequence
     '''
     def __init__(self, header, sequence):
-        self._header = header
+        self._header = header.strip()
         self._sequence = ''.join(sequence.split())
 
     def __str__(self):
@@ -321,7 +321,7 @@ if __name__ == '__main__':
 #    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
 #    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.profile.aligned.fasta', 'r') as ff:
 #    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.det.fasta', 'r') as ff:
-    with open('/users/rg/agrimaldi/Data/gos/full/selw_like.selenoprofiles.prep/selw_like.det.fasta', 'r') as ff:
+    with open('/users/rg/agrimaldi/Data/gos/full/selw_like.selenoprofiles.prep/selw_like_manfiltered.1_tcoffee.fasta', 'r') as ff:
         aa = loadSequences(ff)
     ss = Alignment(aa)
     uu = ss.findPositions(('U','C','-'), True)
