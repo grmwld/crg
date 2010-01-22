@@ -215,8 +215,9 @@ def main():
                               blastfastafile + '.\n' )
         if verbosity >= 2:
             sys.stderr.write( '    >>> Adding evalue to headers.\n' )
+        ### TODO : use .fasta.fh in tmp dir.
         tmpfullheadfasta = blastfastafile + '.fh'
-        addheaders = AddFullHeadersWrapper(blastfastafile,
+        addheaders = AddFullHeadersWrapper2(blastfastafile,
                                            tmpfullheadfasta,
                                            blastindexfile)
         addheaders.run()

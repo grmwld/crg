@@ -12,7 +12,7 @@ BLAST = SBIN + 'blastall'
 MAFFT = SBIN + 'mafft'
 TRIMAL = HBIN + 'trimal_dev'
 TCOFFEE = HBIN + 't_coffee'
-ADDFULLHEADERS = HBIN + 'add_detail_to_titles2.py'
+ADDFULLHEADERS = 'add_detail_to_titles2.py'
 FILTER = MBIN + 'fetch_seq.g'
 PRESELENOPROFILES = HBIN + 'prepare_alignment_selenoprofiles.py'
 SELENOPROFILES = HBIN + 'selenoprofiles.py'
@@ -112,23 +112,43 @@ class UtilityWrapper(dict):
         '''
         os.system(self.cline)
 
+class HasOption(dict):
+    '''Base interface for providing option specification
+    '''
+    def __init__(self, keyarg='', carg='', value=None):
+        self._keyarg = keyarg
+        self._carg = carg
+        self._value = value
+        
+
+    def _get_value(self):
+        return self.getClineOpt(getattr(self._keyarg, self))
+    def _set_value(self):
+        if value:
+            self[self._keyarg] = [self._carg, value]
+        elif self._keyarg in self.keys():
+            del self[self._keyarg]
+        self.updateCline()
+
 
 class HasInFile(dict):
     '''Interface providing infile input.
     '''
-    def __init__(self, carg):
+    def __init__(self, carg='', infile=None):
+        '''Interface providing infile specification
         '''
-        '''
-        self.update({
-            'infile' : [carg, infile],
-        })
+        self._icarg = carg
+        self.infile = infile
 
     @property
     def infile(self):
         return self.getClineOpt('infile')
     @infile.setter
-    def infile(self, infile):
-        self['infile'][1] = infile
+    def infile(self, value):
+        if value:
+            self['infile'] = [self._icarg, value]
+        elif 'infile' in self.keys():
+            del self['infile']
         self.updateCline()
 
 
@@ -138,16 +158,16 @@ class HasOutFile(dict):
     def __init__(self, carg='', outfile=None):
         '''
         '''
-        self.carg = carg
+        self._ocarg = carg
         self.outfile = outfile
         
     @property
     def outfile(self):
         return self.getClineOpt('outfile')    
     @outfile.setter    
-    def outfile(self, outfile):
-        if outfile:
-            self['outfile'] = [self.carg, outfile]
+    def outfile(self, value):
+        if value:
+            self['outfile'] = [self._ocarg, value]
         elif 'outfile' in self.keys():
             del self['outfile']
         self.updateCline()
@@ -230,7 +250,7 @@ class TcoffeeWrapper(UtilityWrapper):
 class TrimalWrapper(UtilityWrapper):
     '''Wrapper for the tool trimal.
     '''
-    def __init__(self, infile, outfile, clusters=None, gapthreshold=None):
+    def __init__(self, infile, outfile, clusters=None, gapthreshold=None, scoreoverlap=None):
         UtilityWrapper.__init__(self, TRIMAL, infile, outfile) 
         self['infile'] = ['-in ', infile]
         self['outfile'] = ['-out ', outfile]
@@ -238,6 +258,9 @@ class TrimalWrapper(UtilityWrapper):
             self['clusters'] = ['-clusters ', str(clusters)]
         if gapthreshold:
             self['gapthreshold'] = ['-gt ', str(gapthreshold)]
+        if scoreoverlap:
+            self['scoreoverlap'] = ['-resoverlap ', str(scoreoverlap[0]),
+                                    ' -seqoverlap ', str(scoreoverlap[0])]
         self.updateCline()
 
     @property
@@ -262,6 +285,18 @@ class TrimalWrapper(UtilityWrapper):
             del self['gapthreshold']
         self.updateCline()
 
+    @property
+    def scoreoverlap(self):
+        return self.getClineOpt('scoreoverlap')                
+    @gapthreshold.setter
+    def scoreoverlap(self, value):
+        if value:
+            self['scoreoverlap'] = ['-resoverlap ', str(scoreoverlap[0]),
+                                    ' -seqoverlap ', str(scoreoverlap[0])]
+        elif 'scoreoverlap' in self.keys():
+            del self['scoreoverlap']
+        self.updateCline()
+
 
 class AddFullHeadersWrapper(UtilityWrapper):
     '''Wrapper to use the add_detail_titles2.py utility,
@@ -270,7 +305,7 @@ class AddFullHeadersWrapper(UtilityWrapper):
     def __init__(self, infile, outfile, patternfile):
         UtilityWrapper.__init__(self, ADDFULLHEADERS, infile, outfile)
         self['infile'] = ['-i ', infile]
-        self['outfile'] = ['> ', outfile]
+        self['outfile'] = ['-o ', outfile]
         self['patternfile'] = ['-p ', patternfile]
         self.updateCline()
 
@@ -292,6 +327,26 @@ class AddFullHeadersWrapper(UtilityWrapper):
                 self.cline += (' ' + self.getClineOpt(opt))
         self.cline += ' ' + self.outfile
 
+
+class AddFullHeadersWrapper2(BaseUtilityWrapper, HasInFile, HasOutFile):
+    '''Wrapper to use the add_detail_titles3.py utility,
+    with fetches the full header of a sequence based on the gi
+    '''
+    def __init__(self, infile, outfile, patternfile):
+        BaseUtilityWrapper.__init__(self, 'add_detail_to_titles3.py')
+        HasInFile.__init__(self, '-i ', infile)
+        HasOutFile.__init__(self, '-o ', outfile)
+        self['patternfile'] = ['-p ', patternfile]
+        self.updateCline()
+
+    @property
+    def patternfile(self):
+        return self.getClineOpt('patternfile')
+    @patternfile.setter
+    def patternfile(self, patternfile):
+        self['patternfile'] = ['-p ', patternfile]
+        self.updateCline()
+        
 
 class FilterWrapper(UtilityWrapper):
     '''Class to use the fetch_seq.g script

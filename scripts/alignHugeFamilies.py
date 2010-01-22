@@ -157,9 +157,9 @@ def main():
     verbosity = options.verbosity
     temp = options.temp
 
-    addheaders = UtilityWrappers.AddFullHeadersWrapper(tmpinfile,
-                                                       fullheadoutfile,
-                                                       patternfile)
+    addheaders = UtilityWrappers.AddFullHeadersWrapper2(tmpinfile,
+                                                        fullheadoutfile,
+                                                        patternfile)
 
     filterseqs = UtilityWrappers.FilterWrapper(tmpinfile,
                                                filteroutfile,
