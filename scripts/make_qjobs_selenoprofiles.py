@@ -64,7 +64,7 @@ def main():
                        help='path to selenoprofiles.',
                        metavar='FILE' )
     
-    parser.set_defaults( outputfolder = '_'.join(str(t) for t in [time.localtime(time.time())[:3]]),
+    parser.set_defaults( outputfolder = '_'.join([str(t) for t in time.localtime(time.time())[:3]]),
                          tempfolder = os.path.abspath('/tmp'),
                          jobbasename = 'SP_',
                          qparam = 'mem_4',
