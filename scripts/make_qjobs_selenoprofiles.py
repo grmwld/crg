@@ -96,6 +96,8 @@ def main():
             tjf.write('#$ -q ' + options.qparam + '\n')
             tjf.write('#$ -N ' + options.jobbasename + genome + '\n')
             tjf.write('. /etc/profile\n')
+            tjf.write('PATH=$PATH:/users/rg/agrimaldi/usr/bin:/users/rg/agrimaldi/Code/python/scripts:/users/rg/mmariotti/bin\n')
+            tjf.write('echo "host : $HOSTNAME"')
             tjf.write('mkdir ' + tmpfold + '\n')
             tjf.write(' '.join(( 'python', options.sppath,
                                  os.path.abspath(options.outputfolder), '-S',
