@@ -73,7 +73,10 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    logs_dir = os.path.abspath(os.path.join(options.outputfolder, 'logs'))
+    if not os.path.isdir(options.outputfolder):
+        os.makedirs(options.outputfolder)
+        
+    logs_dir = os.path.abspath(os.path.join(os.path.split(options.outputfolder)[0], 'logs'))
     if not os.path.isdir(logs_dir):
         os.makedirs(logs_dir)
 
@@ -97,7 +100,7 @@ def main():
             tjf.write('#$ -N ' + options.jobbasename + genome + '\n')
             tjf.write('. /etc/profile\n')
             tjf.write('PATH=$PATH:/users/rg/agrimaldi/usr/bin:/users/rg/agrimaldi/Code/python/scripts:/users/rg/mmariotti/bin\n')
-            tjf.write('echo "host : $HOSTNAME"')
+            tjf.write('echo "host : $HOSTNAME"\n')
             tjf.write('mkdir ' + tmpfold + '\n')
             tjf.write(' '.join(( 'python', options.sppath,
                                  os.path.abspath(options.outputfolder), '-S',
