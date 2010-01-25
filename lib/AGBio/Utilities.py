@@ -33,5 +33,5 @@ getch = _GetchUnix()
 def genTempfilename(dirr='./', prefix=''):
     '''Generate temporary filename
     '''
-    hashn = str(random.getrandbits(128))
+    hashn = str(hex(random.getrandbits(128))[2:-1])
     return os.path.join(dirr, prefix + hashn)
