@@ -260,7 +260,7 @@ class TrimalWrapper(UtilityWrapper):
             self['gapthreshold'] = ['-gt ', str(gapthreshold)]
         if scoreoverlap:
             self['scoreoverlap'] = ['-resoverlap ', str(scoreoverlap[0]),
-                                    ' -seqoverlap ', str(scoreoverlap[0])]
+                                    ' -seqoverlap ', str(scoreoverlap[1])]
         self.updateCline()
 
     @property
@@ -291,8 +291,8 @@ class TrimalWrapper(UtilityWrapper):
     @gapthreshold.setter
     def scoreoverlap(self, value):
         if value:
-            self['scoreoverlap'] = ['-resoverlap ', str(scoreoverlap[0]),
-                                    ' -seqoverlap ', str(scoreoverlap[0])]
+            self['scoreoverlap'] = ['-resoverlap ', str(value[0]),
+                                    ' -seqoverlap ', str(value[1])]
         elif 'scoreoverlap' in self.keys():
             del self['scoreoverlap']
         self.updateCline()
