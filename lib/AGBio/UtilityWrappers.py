@@ -287,8 +287,8 @@ class TrimalWrapper(UtilityWrapper):
 
     @property
     def scoreoverlap(self):
-        return self.getClineOpt('scoreoverlap')                
-    @gapthreshold.setter
+        return self.getClineOpt('scoreoverlap')
+    @scoreoverlap.setter
     def scoreoverlap(self, value):
         if value:
             self['scoreoverlap'] = ['-resoverlap ', str(value[0]),
