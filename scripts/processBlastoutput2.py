@@ -86,6 +86,12 @@ def main():
                        help='e-value threshold.',
                        metavar='FLOAT' )
 
+    parser.add_option( '-E', '--start_expo_evalue',
+                       dest='startexpoeval',
+                       type='int',
+                       help='exponent of the evalue threshold used when refiltering.',
+                       metavar='INT' )
+    
     parser.add_option( '-b', '--blast_version',
                        dest='blastversion',
                        help='set the blast version to use, either `legacy` or `plus`.',
@@ -132,6 +138,7 @@ def main():
     parser.set_defaults( verbosity = 1,
                          database = 'nr',
                          evalue = 10,
+                         startexpoeval = -10,
                          keeppat = None,
                          blastversion = 'legacy',
                          temp = '/tmp/',
@@ -232,7 +239,7 @@ def main():
             tmppat = 'U'
         validseqs = getTopSeqs(seqs=allseqs,
                                maxnumseqs=maxnumstartseq,
-                               startevalue=-10,
+                               startevalue=options.startexpoeval,
                                pattern=tmppat,
                                verbose=verbosity>=4 )
         keptseqs = '.'.join(( options.outputfilename,
