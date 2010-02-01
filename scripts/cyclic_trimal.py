@@ -101,7 +101,8 @@ def main():
         while idcycles < options.maxidcycles \
                   or num_seqs in range_seqs \
                   or options.maxtotalcycles >= ncycle :
-            verb = str(overlapvals) + str(minvals) + str(maxvals)
+            verb = str(overlapvals) + str(minvals) + str(maxvals) + str(ncycle) + ''
+            sys.stdout.write(verb)
             tmpfname = genTempfilename(tmpdir)
             trimmer.outfile = tmpfname
             trimmer.scoreoverlap = overlapvals
@@ -129,7 +130,7 @@ def main():
                 bestnum = num_seqs
                 bestfile = tmpfname
             ncycle += 1
-            print verb, idcycles, num_seqs
+            print idcycles, bestnum, num_seqs
     except IOError, KeyboardInterrupt:
         pass
     finally:
