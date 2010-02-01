@@ -84,11 +84,16 @@ def worker(trimmer):
     trimmer.run()
     return
 
+
 class Trimmer(TrimalWrapper):
     def __init__(self, infile, outfile='boo', scoreoverlap=(0.5, 50)):
         TrimalWrapper.__init__(self, infile, outfile, scoreoverlap=scoreoverlap)
         self.num_seqs = 0
-        
+
+    def update_num_seq(self):
+        with open(self['outfile'][1], 'r') as iff:
+            self.num_seqs = len(loadSequences(iff))
+
 
 def main():
 
@@ -208,15 +213,17 @@ def main():
                 j.start()
             for j in jobs:
                 j.join()
+            for trimmer in trimmers:
+                trimmer.update_num_seq()
             extremTrimmers = inWhichSliceIs2(trimmers, options.numseqs, True)
             ###
             print extremTrimmers
-            for tt in [t[0] for t in extremTrimmers]:
+            for tt in extremTrimmers[0]:
                 try:
                     print tt.scoreoverlap
                     print tt.num_seqs
-                except Exception:
-                    pass
+                except Exception as e:
+                    print e
             ###
             if num_seqs > options.numseqs:
                 minvals = overlapvals[:]
@@ -240,8 +247,8 @@ def main():
                 bestfile = tmpfname
             ncycle += 1
             print verb, idcycles, num_seqs
-    except IOError, KeyboardInterrupt:
-        pass
+    except (IOError, KeyboardInterrupt) as err:
+        print err
     finally:
         print
         print 'copying', bestfile, 'to', options.outputfilename
