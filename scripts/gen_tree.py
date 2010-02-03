@@ -6,8 +6,9 @@ import os
 import optparse
 import shutil
 from ete2 import Tree, faces
+sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
+from AGBio.selenoprofiles_tools.results_analyser import *
 
-global species
 species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_Ellin6076_',
            'Candidatus_Koribacter_versatilis_Ellin345_' : 'Acidobacteria_bacterium_Ellin345_',
            'Synechococcus_sp._JA-2-3Ba_2-13_' : 'Synechococcus_sp._JA-2-3Ba2-13_',
@@ -66,12 +67,24 @@ def sanitize(longname):
 
 def layout(node):
     if node.is_leaf():
+
         add_to_species_dict(node.name, g_genomes)
         node.img_style['size'] = 10
         shortNameFace = faces.TextFace(long2short(node.name))
-        pathNameFace = faces.TextFace(species[sanitize(node.name)])
+#        pathNameFace = faces.TextFace(species[sanitize(node.name)])
         faces.add_face_to_node(shortNameFace, node, column=0)
-        faces.add_face_to_node(pathNameFace, node, column=0)
+#        faces.add_face_to_node(pathNameFace, node, column=0)
+
+        try:
+            fp = os.path.join(resfolder, species[sanitize(node.name)])
+            sp_parser = GenomeFolderParser(fp)
+            sp_parser.parse()
+            if sp_parser.cys and not sp_parser.sec:
+                node.img_style['bgcolor'] = '#9db0cf'
+            if sp_parser.sec:
+                node.img_style['bgcolor'] = '#ff503c'
+        except Exception:
+            pass
 
     else:
         node.img_style['size'] = 0
@@ -98,12 +111,11 @@ def main():
     (options, args) = parser.parse_args()
 
     global g_genomes
-#    genomes = [' '.join(g.split('_')).strip() \
-#               for g in os.listdir(options.sp_res_folder)]
+    global resfolder
+
     g_genomes = os.listdir(options.sp_res_folder)
 
-#    for i, s in enumerate(genomes):
-#        print s, ':::', firstlastd(genomes)[i]
+    resfolder = options.sp_res_folder
     
     t = Tree(options.infilename)
 
