@@ -18,23 +18,25 @@ class GenomeFolderParser(object):
         self.cys = {}
         self.thr = {}
         self.arg = {}
+        self.uga = {}
+        self.ual = {}
         self.stdsecis = {}
         self.nonstdsecis = {}
         self.kw2dict = {'cysteine' : self.cys,
                         'selenocysteine' : self.sec,
                         'threonine' : self.thr,
-                        'arginine' : self.arg}
+                        'arginine' : self.arg,
+                        'uga_containing' : self.uga,
+                        'unaligned' : self.ual}
 
-    def parse(self, sec=True, cys=True, thr=True, arg=True, stdsecis=False, nonstdsecis=False):
+    def parse(self, sec=True, cys=True, thr=True, arg=True, uga=True, ual=True, stdsecis=False, nonstdsecis=False):
         lukw = []
-        if sec:
-            lukw.append('selenocysteine')
-        if cys:
-            lukw.append('cysteine')
-        if thr:
-            lukw.append('threonine')
-        if arg:
-            lukw.append('arginine')
+        if sec: lukw.append('selenocysteine')
+        if cys: lukw.append('cysteine')
+        if thr: lukw.append('threonine')
+        if arg: lukw.append('arginine')
+        if uga: lukw.append('uga_containing')
+        if ual: lukw.append('unaligned')
 
         for d in self.dirs:
             resfiles = [f for f in os.listdir(d) if self._keep(f)]
@@ -51,9 +53,7 @@ class GenomeFolderParser(object):
         return True
 
     def _get_hit_num(self, filename, case):
-        if case not in ['cysteine', 'threonine',
-                        'uga_containing', 'selenocysteine',
-                        'unaligned']:
+        if case not in self.kw2dict.keys():
             raise 'Unknown case : ' + case
         ff = filename.split('.')
         index = ff.index(case) - 1
