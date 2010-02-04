@@ -9,6 +9,9 @@ from ete2 import Tree, faces
 sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
 from AGBio.selenoprofiles_tools.results_analyser import *
 
+MAX_SN_LEN = 10
+MAX_LN_LEN = 30
+
 species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_Ellin6076_',
            'Candidatus_Koribacter_versatilis_Ellin345_' : 'Acidobacteria_bacterium_Ellin345_',
            'Synechococcus_sp._JA-2-3Ba_2-13_' : 'Synechococcus_sp._JA-2-3Ba2-13_',
@@ -70,15 +73,15 @@ def layout(node):
 
         add_to_species_dict(node.name, g_genomes)
         node.img_style['size'] = 10
-        shortNameFace = faces.TextFace(long2short(node.name))
-#        pathNameFace = faces.TextFace(species[sanitize(node.name)])
-        faces.add_face_to_node(shortNameFace, node, column=0)
-#        faces.add_face_to_node(pathNameFace, node, column=0)
+        shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN), ftype='monospace')
+        pathNameFace = faces.TextFace(species[sanitize(node.name)], ftype='monospace')
+        faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+        faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
 
         try:
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
-            sp_parser.parse()
+            sp_parser.parse(sec=True, cys=True)
             if sp_parser.cys and not sp_parser.sec:
                 node.img_style['bgcolor'] = '#9db0cf'
             if sp_parser.sec:
