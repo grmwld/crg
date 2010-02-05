@@ -8,6 +8,7 @@ import shutil
 from ete2 import Tree, faces
 sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
 from AGBio.selenoprofiles_tools.results_analyser import *
+from AGBio.Utilities import *
 
 RES_FOLDER = 'Dropbox/CRG/project/resources_sp_drawer/'
 facecys = faces.ImgFace(RES_FOLDER + 'cys.png')
@@ -57,7 +58,12 @@ species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_El
            'Desulfovibrio_vulgaris_DP4_' : 'Desulfovibrio_vulgaris_subsp._vulgaris_DP4_'
            }
 
-prots2col = {}
+prots2col = ['ahpd_like_1.1', 'ahpd_like_2.1','atpase_e1_e2.1','dio_like.1',
+             'dsba.1','dsbg_like.1','fdha.1','frhd.1','gpx.1',
+             'grda.1','grdb.1','mett.1','msra.1',
+             'os_hp2.1','os_hp2.2','prdb.1','prdb.2',
+             'prx_like_1.1','prx_like_2.1','prx_like_3.1','selw_like.1',
+             'sulft_2.1','sulft_3.1','usha_like.1','seld']
 
 
 def long2short(longname):
@@ -87,34 +93,47 @@ def layout(node):
         shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
                                        ftype='monospace')
         pathNameFace = faces.TextFace(species[sanitize(node.name)], ftype='monospace')
+        longNameFace = faces.TextFace(node.name, ftype='monospace')
         faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-#        faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
-
+        #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+        faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
+        
         try:
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
             sp_parser.parse(sec=True, cys=True, thr=True, arg=True)
-            
-           ##  for protname in sp_parser.notempty.keys():
-##                 if protname not in prots2col.keys():
-##                     prots2col[protname] = len(prots2col.keys())
-##            for pn in sp_parser.notempty
-            for pn in sp_parser.cys.keys():
-                if pn not in prots2col.keys():
-                    prots2col[pn] = len(prots2col)+2
-                faces.add_face_to_node(facecys, node, prots2col[pn], aligned=True)
-            for pn in sp_parser.sec.keys():
-                if pn not in prots2col.keys():
-                    prots2col[pn] = len(prots2col)+2
-                faces.add_face_to_node(facesec, node, prots2col[pn], aligned=True)
-            for pn in sp_parser.arg.keys():
-                if pn not in prots2col.keys():
-                    prots2col[pn] = len(prots2col)+2
-                faces.add_face_to_node(facearg, node, prots2col[pn], aligned=True)
-            for pn in sp_parser.thr.keys():
-                if pn not in prots2col.keys():
-                    prots2col[pn] = len(prots2col)+2
-                faces.add_face_to_node(facethr, node, prots2col[pn], aligned=True)
+
+            protnames = set()
+            for tt in sp_parser.notempty:
+                protnames.update(tt.keys())
+            protnames = list(protnames)
+
+            for protname in protnames:
+                if protname not in prots2col:
+                    prots2col.append(protname)
+
+            for col, protname in enumerate(prots2col):
+                    if protname not in protnames:
+                        faces.add_face_to_node(facenan, node,
+                                               col + 2,
+                                               aligned=True)
+                    else:
+                        if protname in sp_parser.cys.keys():
+                            faces.add_face_to_node(facecys, node,
+                                                   col + 2,
+                                                   aligned=True)
+                        if protname in sp_parser.sec.keys():
+                            faces.add_face_to_node(facesec, node,
+                                                   col + 2,
+                                                   aligned=True)
+                        if protname in sp_parser.thr.keys():
+                            faces.add_face_to_node(facethr, node,
+                                                   col + 2,
+                                                   aligned=True)
+                        if protname in sp_parser.arg.keys():
+                            faces.add_face_to_node(facearg, node,
+                                                   col + 2,
+                                                   aligned=True)
         except Exception, e:
             print e
 
