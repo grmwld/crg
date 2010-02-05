@@ -4,7 +4,6 @@
 import os
 import sys
 import random
-from collections import Iterable
 
 
 def getBaseName(filename, numextension=1):
