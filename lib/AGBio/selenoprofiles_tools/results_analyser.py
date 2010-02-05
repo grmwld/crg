@@ -20,7 +20,6 @@ class P2G_Parser(object):
         self.result = ParserResult()
 
     def _parse_genewise(self):
-        print self._filename
         #proc = subprocess.Popen(['parse_genewise.py', '-i', self._filename],
         #                        stdout=subprocess.PIPE,
         #                        shell=True)
@@ -71,7 +70,9 @@ class ParserResult(object):
             self.end = 0
             self.sequence = ''
         def __str__(self):
-            return '\n\t'.join((self.name, self.start, self.end, self.sequence))
+            return '\n'.join((self.name,
+                              self.start + ' --- ' + self.end,
+                              formatText(self.sequence, 50, 4)))
         def parse(self, info, seq):
             self.name = info[0]
             self.start = info[1]
@@ -216,7 +217,6 @@ def main():
     parser.parse(doall=True)
     print parser.cys
     pp = os.path.join(testpath, 'output', 'seld.1.unaligned.p2g')
-    print pp
     pparser = P2G_Parser(pp)
     pparser.parse()
     print pparser.result
