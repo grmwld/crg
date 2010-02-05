@@ -4,6 +4,8 @@
 import os
 import sys
 import random
+from collections import Iterable
+
 
 def getBaseName(filename, numextension=1):
     return '.'.join(filename.split('.')[:-numextension])
@@ -26,8 +28,6 @@ class _GetchUnix:
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
-
-
 getch = _GetchUnix()
 
 def genTempfilename(dirr='./', prefix=''):
@@ -35,3 +35,12 @@ def genTempfilename(dirr='./', prefix=''):
     '''
     hashn = str(hex(random.getrandbits(128))[2:-1])
     return os.path.join(dirr, prefix + hashn)
+
+def flatten(x):
+    result = []
+    for el in x:
+        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
