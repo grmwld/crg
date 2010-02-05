@@ -1,12 +1,12 @@
 #!/usr/bin/env python2.6
 # -*- coding:utf-8 -*-
 
+from __future__ import with_statement
 import os
 import sys
 import subprocess
 sys.path.append('/users/rg/mmariotti/libraries')
 from MMlib import bbash
-from AGBio.UtilityWrappers import *
 from AGBio.io.common import *
 
 
@@ -102,6 +102,7 @@ class GenomeFolderParser(object):
                          os.path.join(self.rootdir, 'discarded')]
         else:
             self.dirs = [os.path.join(self.rootdir, d) for d in dirs]
+        self.notempty = []
         self.sec = {}
         self.cys = {}
         self.thr = {}
@@ -170,6 +171,12 @@ class GenomeFolderParser(object):
                 for kw in lukw:
                     if kw in ff.split('.'):
                         self._update_dict(kw, ff)
+        self.notempty = [pp for pp in [self.sec,
+                                       self.cys,
+                                       self.thr,
+                                       self.arg,
+                                       self.uga,
+                                       self.ual] if pp]
 
     def _keep(self, filename):
         trash = ['.ali', '.hit']
@@ -189,10 +196,20 @@ class GenomeFolderParser(object):
             index = ff.index(case) - 3
         return int(ff[index])
 
+    def _get_prot_name(self, filename, case):
+        spe_cases = ('std', 'non_std', 'twil')
+        parts = filename.split('.')
+        name = parts[0]
+        if case not in spe_cases:
+            index = parts.index(case) - 1
+        else:
+            index = parts.index(case) - 3
+        return '.'.join(parts[:index])
+
     def _update_dict(self, keyword, filename):
         t_dict = {}
         t_dict.update(self.kw2dict[keyword])
-        protname = filename.split('.')[0]
+        protname = self._get_prot_name(filename, keyword)
         hit_num = self._get_hit_num(filename, keyword)
         if protname in t_dict:
             if hit_num in t_dict[protname]:

@@ -9,6 +9,13 @@ from ete2 import Tree, faces
 sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
 from AGBio.selenoprofiles_tools.results_analyser import *
 
+RES_FOLDER = 'Dropbox/CRG/project/resources_sp_drawer/'
+facecys = faces.ImgFace(RES_FOLDER + 'cys.png')
+facesec = faces.ImgFace(RES_FOLDER + 'sec.png')
+facearg = faces.ImgFace(RES_FOLDER + 'arg.png')
+facethr = faces.ImgFace(RES_FOLDER + 'thr.png')
+facenan = faces.ImgFace(RES_FOLDER + 'nan.png')
+
 MAX_SN_LEN = 10
 MAX_LN_LEN = 30
 
@@ -42,13 +49,16 @@ species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_El
            'Escherichia_coli_str._K-12_substr._DH10B_' : 'Escherichia_coli_str._K12_substr._DH10B_',
            'Escherichia_coli_str._K-12_substr._W3110_' : 'Escherichia_coli_str._K12_substr._W3110_',
            'Escherichia_coli_str._K-12_substr._MG1655_' : 'Escherichia_coli_str._K12_substr._MG1655_',
-           'Salmonella_enterica_subsp._enterica_serovar_Typhimurium_str._LT2_' : '',
+           'Salmonella_enterica_subsp._enterica_serovar_Typhimurium_str._LT2_' : 'Salmonella_typhimurium_LT2_',
            'Rhodococcus_jostii_RHA1_' : 'Rhodococcus_sp._RHA1_',
            'Bacillus_cytotoxicus_NVH_391-98_' : 'Bacillus_cereus_subsp._cytotoxis_NVH_391-98_',
            'Pseudomonas_fluorescens_Pf0-1_' : 'Pseudomonas_fluorescens_PfO-1_',
            'Desulfovibrio_vulgaris_str._Hildenborough_' : 'Desulfovibrio_vulgaris_subsp._vulgaris_str._Hildenborough_',
            'Desulfovibrio_vulgaris_DP4_' : 'Desulfovibrio_vulgaris_subsp._vulgaris_DP4_'
            }
+
+prots2col = {}
+
 
 def long2short(longname):
     ln = longname.split()
@@ -69,25 +79,44 @@ def sanitize(longname):
     return t + '_'
 
 def layout(node):
+
     if node.is_leaf():
 
         add_to_species_dict(node.name, g_genomes)
         node.img_style['size'] = 10
-        shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN), ftype='monospace')
+        shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
+                                       ftype='monospace')
         pathNameFace = faces.TextFace(species[sanitize(node.name)], ftype='monospace')
         faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-        faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+#        faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
 
         try:
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
-            sp_parser.parse(sec=True, cys=True)
-            if sp_parser.cys and not sp_parser.sec:
-                node.img_style['bgcolor'] = '#9db0cf'
-            if sp_parser.sec:
-                node.img_style['bgcolor'] = '#ff503c'
-        except Exception:
-            pass
+            sp_parser.parse(sec=True, cys=True, thr=True, arg=True)
+            
+           ##  for protname in sp_parser.notempty.keys():
+##                 if protname not in prots2col.keys():
+##                     prots2col[protname] = len(prots2col.keys())
+##            for pn in sp_parser.notempty
+            for pn in sp_parser.cys.keys():
+                if pn not in prots2col.keys():
+                    prots2col[pn] = len(prots2col)+2
+                faces.add_face_to_node(facecys, node, prots2col[pn], aligned=True)
+            for pn in sp_parser.sec.keys():
+                if pn not in prots2col.keys():
+                    prots2col[pn] = len(prots2col)+2
+                faces.add_face_to_node(facesec, node, prots2col[pn], aligned=True)
+            for pn in sp_parser.arg.keys():
+                if pn not in prots2col.keys():
+                    prots2col[pn] = len(prots2col)+2
+                faces.add_face_to_node(facearg, node, prots2col[pn], aligned=True)
+            for pn in sp_parser.thr.keys():
+                if pn not in prots2col.keys():
+                    prots2col[pn] = len(prots2col)+2
+                faces.add_face_to_node(facethr, node, prots2col[pn], aligned=True)
+        except Exception, e:
+            print e
 
     else:
         node.img_style['size'] = 0
