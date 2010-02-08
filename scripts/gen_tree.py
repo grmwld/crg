@@ -18,7 +18,7 @@ facethr = faces.ImgFace(RES_FOLDER + 'thr.png')
 facenan = faces.ImgFace(RES_FOLDER + 'nan.png')
 
 MAX_SN_LEN = 10
-MAX_LN_LEN = 30
+MAX_LN_LEN = 70
 
 species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_Ellin6076_',
            'Candidatus_Koribacter_versatilis_Ellin345_' : 'Acidobacteria_bacterium_Ellin345_',
@@ -93,7 +93,8 @@ def layout(node):
         shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
                                        ftype='monospace')
         pathNameFace = faces.TextFace(species[sanitize(node.name)], ftype='monospace')
-        longNameFace = faces.TextFace(node.name, ftype='monospace')
+        longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
+                                      ftype='monospace')
         faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
         #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
         faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
