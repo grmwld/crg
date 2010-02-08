@@ -159,6 +159,10 @@ def main():
     parser.add_option('-g', '--gui',
                       action='store_true', dest='gui', default=False,
                       help='Use GUI for printing.')
+
+    parser.add_option('-r', '--render',
+                      action='store_true', dest='render', default=False,
+                      help='render the tree in .png format.')
     
     (options, args) = parser.parse_args()
 
@@ -175,6 +179,9 @@ def main():
         t.show(layout)
     else:
         print t
+
+    if options.render:
+        t.render('tree.png', layout)
 
 
 if __name__ == '__main__':
