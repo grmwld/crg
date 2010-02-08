@@ -18,6 +18,7 @@ PRESELENOPROFILES = HBIN + 'prepare_alignment_selenoprofiles.py'
 SELENOPROFILES = HBIN + 'selenoprofiles.py'
 BLASTPARSER = 'blaster_parser.g'
 DOWNLOADER = HBIN + 'get_sequence_from_gi.pl'
+BSECISEARCH = 'bsecisearch_custom.pl'
 
 NOOPT = ['', '']
 
@@ -513,7 +514,34 @@ class DownloaderWrapper(UtilityWrapper):
 
     def updateCline(self):
         self.cline = ' '.join((self.utilitypath, self.infile, self.outfile))
+
+
+class BSeciSearchWrapper(BaseUtilityWrapper, HasInFile):
+    '''Wrapper for the bSECISearch utility.
+    '''
+    def __init__(self, infile, strands='0', frames='0'):
+        BaseUtilityWrapper.__init__(self, BSECISEARCH)
+        HasInFile.__init__(self, '-i ', infile)
+        self['strands'] = ['-s ', strands]
+        self['frames'] = ['-f ', frames]
+        self.updateCline()
+
+    @property
+    def strands(self):
+        return self.getClineOpt('strands')
+    @strands.setter
+    def strands(self, value):
+        self['strands'] = ['-s ', value]
+        self.updateCline()
         
+    @property
+    def frames(self):
+        return self.getClineOpt('frames')
+    @frames.setter
+    def frames(self, value):
+        self['frames'] = ['-f ', value]
+        self.updateCline()
+    
     
 class SelenoprofilesWrapper(UtilityWrapper):
     pass
