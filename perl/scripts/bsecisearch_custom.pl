@@ -7,7 +7,7 @@ use Getopt::Std;
 
 # Command line options
 my %opts;
-getopts('i:s:f:a:', \%opts);
+getopts('i:s:f:a:o:', \%opts);
 
 # Predefined values
 my @alphabet = ('A','C','G','U');
@@ -65,11 +65,15 @@ my $extended_length = 3;
 
 my $num = 0;
 
+my $output_dir = '.';
+if ($opts{'o'}) {
+    $output_dir = $opts{o}
+}
 
-open(TEMP, ">$output_file") or die "Can't open file $output_file.\n";
-open(ORF, ">$orf_file") or die "Can't open file $orf_file.\n";
-open(RNA, ">$rna_file") or die "Can't open file $rna_file.\n";
-open (GC_CON, ">$gc_file") or die "Can't open file.\n";
+open(TEMP, ">$output_dir/$output_file") or die "Can't open file $output_file.\n";
+open(ORF, ">$output_dir/$orf_file") or die "Can't open file $orf_file.\n";
+open(RNA, ">$output_dir/$rna_file") or die "Can't open file $rna_file.\n";
+open (GC_CON, ">$output_dir/$gc_file") or die "Can't open file.\n";
 
 # command line arguments parsing
 my $dostrands;
