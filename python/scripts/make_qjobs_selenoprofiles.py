@@ -63,13 +63,22 @@ def main():
                        dest='sppath',
                        help='path to selenoprofiles.',
                        metavar='FILE' )
+
+    parser.add_option( '-r', '--args',
+                       dest='sp_args',
+                       help='additional args (coma separated) to pass to\
+                       selenoprofiles. For instance, steps to perform go there.\
+                       Default : -S',
+                       metavar='OPTS')
+    
     
     parser.set_defaults( outputfolder = '_'.join([str(t) for t in time.localtime(time.time())[:3]]),
                          tempfolder = os.path.abspath('/tmp'),
                          jobbasename = 'SP_',
                          qparam = 'mem_4',
                          jobsfolder = os.getcwd(),
-                         sppath = '/users/rg/mmariotti/Scripts/selenoprofiles.py')
+                         sppath = '/users/rg/mmariotti/Scripts/selenoprofiles.py',
+                         sp_args = '-S')
 
     (options, args) = parser.parse_args()
 
@@ -87,10 +96,9 @@ def main():
         genomeslist = [g.strip() for g in gl.readlines()]
 
     for genome in genomeslist:
-
         tmpfold = genTempfilename(options.tempfolder)
-        
-        jobfilename = os.path.join(options.jobsfolder, options.jobbasename + genome + '.sh')
+        jobfilename = os.path.join(options.jobsfolder,
+                                   options.jobbasename + genome + '.sh')
 
         with open(jobfilename, 'w') as tjf:
             tjf.write('#!/bin/bash\n')
@@ -99,11 +107,12 @@ def main():
             tjf.write('#$ -q ' + options.qparam + '\n')
             tjf.write('#$ -N ' + options.jobbasename + genome + '\n')
             tjf.write('. /etc/profile\n')
-            tjf.write('PATH=$PATH:/users/rg/agrimaldi/usr/bin:/users/rg/agrimaldi/Code/python/scripts:/users/rg/mmariotti/bin\n')
+            tjf.write('PATH=$PATH:/users/rg/agrimaldi/usr/bin:/users/rg/agrimaldi/Code/python/python/scripts:/users/rg/mmariotti/bin\n')
             tjf.write('echo "host : $HOSTNAME"\n')
             tjf.write('mkdir ' + tmpfold + '\n')
             tjf.write(' '.join(( 'python', options.sppath,
-                                 os.path.abspath(options.outputfolder), '-S',
+                                 os.path.abspath(options.outputfolder),
+                                 ' '.join(options.sp_args.split(',')),
                                  '-genomes_folder', options.genomesfolder,
                                  '-genome', genome,
                                  '-profiles', options.profilesfolder,
