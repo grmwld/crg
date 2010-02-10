@@ -58,6 +58,7 @@ class P2G_ParserResult(object):
         self.target = self._result_seq()
         self.orig_pos = []
         self.consensus = ''
+        self.coverage = 0
 
     def __str__(self):
         return '\n'.join((str(self.query), str(self.target), self.score,
