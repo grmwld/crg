@@ -1,6 +1,8 @@
 #!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
+from __future__ import with_statement
+
 def writeline(outf, line=''):
     outf.write(line + '\n')
     
@@ -13,3 +15,10 @@ def formatText(text, width=80, leftpad=0):
             result += ' ' * leftpad
         result += c
     return result
+
+def isFileEmpty(filename):
+    with open(filename, 'r') as f:
+        cont = f.read().strip()
+        if cont:
+            return False
+    return True

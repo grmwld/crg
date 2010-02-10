@@ -5,6 +5,7 @@ from __future__ import with_statement
 import os
 import sys
 import subprocess
+import shutil
 sys.path.append('/users/rg/mmariotti/libraries')
 from MMlib import bbash
 from AGBio.io.common import *
@@ -44,6 +45,7 @@ class GenomeFolderParser(object):
         self.secis_std = {}
         self.secis_nonstd = {}
         self.secis_twil = {}
+        self.secis_b = {}
         self.kw2dict = {'cysteine' : self.cys,
                         'selenocysteine' : self.sec,
                         'threonine' : self.thr,
@@ -52,11 +54,12 @@ class GenomeFolderParser(object):
                         'unaligned' : self.ual,
                         'std' : self.secis_std,
                         'non_std' : self.secis_nonstd,
-                        'twil' : self.secis_twil}
+                        'twil' : self.secis_twil,
+                        'bsecis' : self.secis_b}
 
     def parse(self, doall=False,
               sec=False, cys=False, thr=False, arg=False,
-              uga=False, ual=False,
+              uga=False, ual=False, bsecis=False,
               stdsecis=False, nonstdsecis=False, twilsecis='False'):
         '''Method to parse the folder.
 
@@ -64,29 +67,21 @@ class GenomeFolderParser(object):
         True, everything is parsed.
 
         Arguments:
-        - `self`:
-        - `doall`:
-        - `sec`:
-        - `cys`:
-        - `thr`:
-        - `arg`:
-        - `uga`:
-        - `ual`:
-        - `stdsecis`:
-        - `nonstdsecis`:
-        - `twilsecis`:
+        - `doall`: check for any output file.
+        - `sec`: check for selenocysteine containing candidates.
+        - `cys`: check for cysteine containing candidates.
+        - `thr`: check for threonine containing candidates.
+        - `arg`: check for arginine containing candidates.
+        - `uga`: check for UGA containing candidates.
+        - `ual`: check for unaligned candidates.
+        - `stdsecis`: check for standard SECIS containing candidates.
+        - `nonstdsecis`: check for non-std SECIS containing candidates.
+        - `twilsecis`: check for twilight SECIS containing candidates.
+        - `bsecis`: check for bSECIS containing candidates
         '''
         lukw = []
         if doall:
-            lukw.append('selenocysteine')
-            lukw.append('cysteine')
-            lukw.append('threonine')
-            lukw.append('arginine')
-            lukw.append('uga_containing')
-            lukw.append('unaligned')
-            lukw.append('std')
-            lukw.append('non_std')
-            lukw.append('twil')
+            lukw = self.kw2dict.keys()
         else:
             if sec: lukw.append('selenocysteine')
             if cys: lukw.append('cysteine')
@@ -97,6 +92,7 @@ class GenomeFolderParser(object):
             if stdsecis : lukw.append('std')
             if nonstdsecis : lukw.append('non_std')
             if twilsecis : lukw.append('twil')
+            if bsecis : lukw.append('bsecis')
         for d in self.dirs:
             resfiles = [f for f in os.listdir(d) if self._keep(f)]
             for ff in resfiles:
@@ -108,7 +104,39 @@ class GenomeFolderParser(object):
                                        self.thr,
                                        self.arg,
                                        self.uga,
-                                       self.ual] if pp]
+                                       self.ual,
+                                       self.bsecis] if pp]
+
+    def parseResultFiles(self, p2g=False, bsecisearch=False, force=False):
+        '''Calls a parsing function on each file of a given result.
+
+        bsecisearch is used on selenoproteins candidates.
+        p2g files are parsed with an appropriate parser.
+        '''
+        if bsecisearch:
+            for proteink, proteinv in self.sec.items():
+                b_secisearcher = BSeciSearchWrapper('dull', 'dul', 1, 1)
+                for hitk, hitv in proteinv.items():
+                    outdir = '.'.join([proteink,
+                                       str(hitk),
+                                       'selenoproteine'
+                                       'bsecis'])
+                    os.mkdir(outdir)
+                    cdsfile = [f for f in hitv if f.endswith('.cds')][0]
+                    b_secisearcher.infile = cdsfile
+                    b_secisearcher.outdir = outdir
+                    b_secisearcher.run()
+                    bs_output = os.path.join(outdir, 'bsecis_containing_sequences')
+                    if not isFileEmpty(bs_output):
+                        self._update_dict('bsecis', outdir)
+                        self._update_dict('selenocysteine', outdir)
+        if p2g:
+            for case in self.notempty:
+                for proteink, proteinv in case.items():
+                    for hitk, hitv in protein.items():
+                        p2gfile = [f for f in hitv if f.endswith('.p2g')][0]
+                        p2g_parser = P2G_Parser(p2gfile)
+                        p2g_parser.parse()
 
     def _keep(self, filename):
         trash = ['.ali', '.hit']

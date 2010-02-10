@@ -5,8 +5,12 @@ import sys
 import os
 import optparse
 import shutil
-from ete2 import Tree, faces
+#sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/MySQL_python-1.2.2-py2.5-linux-i686.egg')
+#sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/PyQt4')
+#import PyQt4
+#sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages')
 sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
+from ete2 import Tree, faces
 from AGBio.selenoprofiles_tools.results_analyser import *
 from AGBio.Utilities import *
 
@@ -103,6 +107,8 @@ def layout(node):
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
             sp_parser.parse(sec=True, cys=True, thr=True, arg=True)
+            if bsecisearchoption:
+                sp_parser.parseFiles(p2g=False, bsecisearch=True)
 
             protnames = set()
             for tt in sp_parser.notempty:
@@ -125,6 +131,10 @@ def layout(node):
                                                    aligned=True)
                         if protname in sp_parser.sec.keys():
                             faces.add_face_to_node(facesec, node,
+                                                   col + 2,
+                                                   aligned=True)
+                        if protname in sp_parser.bsecis.keys():
+                            faces.add_face_to_node(facenan, node,
                                                    col + 2,
                                                    aligned=True)
                         if protname in sp_parser.thr.keys():
@@ -163,15 +173,21 @@ def main():
     parser.add_option('-r', '--render',
                       action='store_true', dest='render', default=False,
                       help='render the tree in .png format.')
+
+    parser.add_option('-b', '--bsecisearch',
+                      action='store_true', dest='bsecisearch', default=False,
+                      help='search for bSECIS elements before building the tree.')
     
     (options, args) = parser.parse_args()
 
     global g_genomes
     global resfolder
+    global bsecisearchoption
 
     g_genomes = os.listdir(options.sp_res_folder)
 
     resfolder = options.sp_res_folder
+    bsecisearchoption = options.bsecisearch
     
     t = Tree(options.infilename)
 
