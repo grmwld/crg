@@ -130,6 +130,8 @@ class GenomeFolderParser(object):
                     if not isFileEmpty(bs_output):
                         self._update_dict('bsecis', outdir)
                         self._update_dict('selenocysteine', outdir)
+                    else:
+                        shutil.rmtree(bs_output)
         if p2g:
             for case in self.notempty:
                 for proteink, proteinv in case.items():
@@ -146,7 +148,7 @@ class GenomeFolderParser(object):
         return True
 
     def _get_hit_num(self, filename, case):
-        spe_cases = ('std', 'non_std', 'twil')
+        spe_cases = ('std', 'non_std', 'twil', 'bsecis')
         if case not in self.kw2dict.keys():
             raise 'Unknown case : ' + case
         ff = filename.split('.')
@@ -157,7 +159,7 @@ class GenomeFolderParser(object):
         return int(ff[index])
 
     def _get_prot_name(self, filename, case):
-        spe_cases = ('std', 'non_std', 'twil')
+        spe_cases = ('std', 'non_std', 'twil', 'bsecis')
         parts = filename.split('.')
         name = parts[0]
         if case not in spe_cases:
@@ -182,7 +184,11 @@ class GenomeFolderParser(object):
 
 
 class ResultFolderParser(object):
-    pass
+    '''Parser for whole result folder, containing several genomes.
+    '''
+    def __init__(self, folder, lookat='output'):
+        rootfolder = os.path.abspath(folder)
+        self._genomes = [d for d in os.listdir(folder) if os.path.isdir(d)]
 
 
 def main():
