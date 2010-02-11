@@ -17,7 +17,7 @@ class BaseFileWrapper(object):
 class Openable(object):
     def openf(cls, mode):
         try:
-            return open(cls.name, mode)
+            cls.fobj = cls.name.open(cls.name, mode)
         except Exception, (e):
             print e
 
@@ -25,7 +25,11 @@ class Openable(object):
 class Closable(object):
     '''Interface for object that can be closed (ie : files)
     '''
-    def closef(name, )
+    def closef(cls):
+        try:
+            cls.obj.close()
+        except Exception, (e):
+            print e
 
 
 class Container(object):
