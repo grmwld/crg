@@ -5,6 +5,7 @@ import sys
 import os
 import optparse
 import shutil
+import traceback
 #sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/MySQL_python-1.2.2-py2.5-linux-i686.egg')
 #sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/PyQt4')
 #import PyQt4
@@ -17,6 +18,7 @@ from AGBio.Utilities import *
 RES_FOLDER = 'Dropbox/CRG/project/resources_sp_drawer/'
 facecys = faces.ImgFace(RES_FOLDER + 'cys.png')
 facesec = faces.ImgFace(RES_FOLDER + 'sec.png')
+facesec_b = faces.ImgFace(RES_FOLDER + 'sec-secis.png')
 facearg = faces.ImgFace(RES_FOLDER + 'arg.png')
 facethr = faces.ImgFace(RES_FOLDER + 'thr.png')
 facenan = faces.ImgFace(RES_FOLDER + 'nan.png')
@@ -91,24 +93,28 @@ def sanitize(longname):
 def layout(node):
 
     if node.is_leaf():
-
-        add_to_species_dict(node.name, g_genomes)
-        node.img_style['size'] = 10
-        shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
-                                       ftype='monospace')
-        pathNameFace = faces.TextFace(species[sanitize(node.name)], ftype='monospace')
-        longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
-                                      ftype='monospace')
-        faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-        #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
-        faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
-        
         try:
+            add_to_species_dict(node.name, g_genomes)
+            node.img_style['size'] = 10
+            species_separator = faces.TextFace(' ', ftype='monospace', fsize=12)
+            shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
+                                           ftype='monospace')
+            pathNameFace = faces.TextFace(species[sanitize(node.name)],
+                                          ftype='monospace')
+            longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
+                                          ftype='monospace')
+            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+            #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+            faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
+            faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+        
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
-            sp_parser.parse(sec=True, cys=True, thr=True, arg=True)
+            sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
             if bsecisearchoption:
-                sp_parser.parseFiles(p2g=False, bsecisearch=True)
+                sp_parser.parseResultFiles(p2g=False, bsecisearch=True)
+                sp_parser = GenomeFolderParser(fp)
+                sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
 
             protnames = set()
             for tt in sp_parser.notempty:
@@ -130,13 +136,14 @@ def layout(node):
                                                    col + 2,
                                                    aligned=True)
                         if protname in sp_parser.sec.keys():
-                            faces.add_face_to_node(facesec, node,
-                                                   col + 2,
-                                                   aligned=True)
-                        if protname in sp_parser.bsecis.keys():
-                            faces.add_face_to_node(facenan, node,
-                                                   col + 2,
-                                                   aligned=True)
+                            if protname in sp_parser.secis_b.keys():
+                                faces.add_face_to_node(facesec_b, node,
+                                                       col + 2,
+                                                       aligned=True)
+                            else:
+                                faces.add_face_to_node(facesec, node,
+                                                       col + 2,
+                                                       aligned=True)
                         if protname in sp_parser.thr.keys():
                             faces.add_face_to_node(facethr, node,
                                                    col + 2,
@@ -145,8 +152,15 @@ def layout(node):
                             faces.add_face_to_node(facearg, node,
                                                    col + 2,
                                                    aligned=True)
+        except KeyError:
+            node.delete()
+        except OSError, e:
+            if e.errno == 2:
+                pass
         except Exception, e:
             print e
+            print traceback.print_exc()
+            if node.name.startswith('H'): print '=====', node.name, '====='
 
     else:
         node.img_style['size'] = 0
