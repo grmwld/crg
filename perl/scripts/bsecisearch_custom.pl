@@ -113,11 +113,9 @@ else {
 }
 
 print "Loading data......";
-sleep (1);
 @contents = get_file_data($genome_file);
 %genome = extract_sequence_from_fasta_data(@contents);
 print "OK!\n";
-sleep (1);
 
 foreach $genome_id (keys %genome) {
      
@@ -652,8 +650,6 @@ close ORF;
 
 print "\nThere are ", $uga_count, " UGA codons in the query genome (two strands).\n";
 print "There are ", $num, " possible SECIS elements in the query genome.\n\n";
-
-sleep (1);
 
 print "Running bSECISProfile algorithm............";
 
