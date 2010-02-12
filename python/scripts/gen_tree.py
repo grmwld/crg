@@ -89,13 +89,13 @@ def layout(node):
         try:
             add_to_species_dict(node.name, g_genomes)
             node.img_style['size'] = 10
-            species_separator = faces.TextFace(' ', ftype='monospace', fsize=12)
+            species_separator = faces.TextFace(' ', ftype='courier', fsize=12)
             shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
-                                           ftype='monospace')
+                                           ftype='courier')
             pathNameFace = faces.TextFace(species[sanitize(node.name)],
-                                          ftype='monospace')
+                                          ftype='courier')
             longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
-                                          ftype='monospace')
+                                          ftype='courier')
             faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
             #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
             faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
