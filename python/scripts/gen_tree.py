@@ -99,7 +99,7 @@ def layout(node):
             faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
             #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
             faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
-            faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+            #faces.add_face_to_node(species_separator, node, column=1, aligned=True)
         
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
