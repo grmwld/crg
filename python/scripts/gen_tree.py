@@ -15,13 +15,6 @@ from ete2 import Tree, faces
 from AGBio.selenoprofiles_tools.results_analyser import *
 from AGBio.Utilities import *
 
-RES_FOLDER = 'Dropbox/CRG/project/resources_sp_drawer/'
-facecys = faces.ImgFace(RES_FOLDER + 'cys.png')
-facesec = faces.ImgFace(RES_FOLDER + 'sec.png')
-facesec_b = faces.ImgFace(RES_FOLDER + 'sec-secis.png')
-facearg = faces.ImgFace(RES_FOLDER + 'arg.png')
-facethr = faces.ImgFace(RES_FOLDER + 'thr.png')
-facenan = faces.ImgFace(RES_FOLDER + 'nan.png')
 
 MAX_SN_LEN = 10
 MAX_LN_LEN = 70
@@ -192,11 +185,25 @@ def main():
                       action='store_true', dest='bsecisearch', default=False,
                       help='search for bSECIS elements before building the tree.')
     
+    parser.add_option('-R', '--resources',
+                      dest='res_folder',
+                      help='resources folder. (images)',
+                      metavar='DIR')
+
+    parser.set_defaults(res_folder = '.')
+
     (options, args) = parser.parse_args()
 
     global g_genomes
     global resfolder
     global bsecisearchoption
+    global facecys, facesec, facesec_b, facearg, facethr, facenan
+    facecys = faces.ImgFace(options.res_folder + 'cys.png')
+    facesec = faces.ImgFace(options.res_folder + 'sec.png')
+    facesec_b = faces.ImgFace(options.res_folder + 'sec-secis.png')
+    facearg = faces.ImgFace(options.res_folder + 'arg.png')
+    facethr = faces.ImgFace(options.res_folder + 'thr.png')
+    facenan = faces.ImgFace(options.res_folder + 'nan.png')
 
     g_genomes = os.listdir(options.sp_res_folder)
 
