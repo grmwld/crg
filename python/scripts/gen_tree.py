@@ -14,6 +14,7 @@ sys.path.append('/users/rg/agrimaldi/usr/lib/python2.5/site-packages')
 from ete2 import Tree, faces
 from AGBio.selenoprofiles_tools.results_analyser import *
 from AGBio.Utilities import *
+from PyQt4 import QtGui
 
 
 MAX_SN_LEN = 10
@@ -87,19 +88,19 @@ def layout(node):
 
     if node.is_leaf():
         try:
+            has_sec = False
             add_to_species_dict(node.name, g_genomes)
             node.img_style['size'] = 10
             species_separator = faces.TextFace(' ', ftype='courier', fsize=12)
             shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
-                                           ftype='courier')
+                                           ftype='courier',
+                                           fsize=12)
             pathNameFace = faces.TextFace(species[sanitize(node.name)],
-                                          ftype='courier')
+                                          ftype='courier',
+                                          fsize=12)
             longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
-                                          ftype='courier')
-            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-            #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
-            faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
-            #faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+                                          ftype='courier',
+                                          fsize=12)
         
             fp = os.path.join(resfolder, species[sanitize(node.name)])
             sp_parser = GenomeFolderParser(fp)
@@ -129,6 +130,7 @@ def layout(node):
                                                    col + 2,
                                                    aligned=True)
                         if protname in sp_parser.sec.keys():
+                            has_sec = True
                             if protname in sp_parser.secis_b.keys():
                                 faces.add_face_to_node(facesec_b, node,
                                                        col + 2,
@@ -145,6 +147,20 @@ def layout(node):
                             faces.add_face_to_node(facearg, node,
                                                    col + 2,
                                                    aligned=True)
+            if has_sec:
+#                node.img_style['fgcolor'] = '#75af51'
+                shortNameFace.bgcolor = QtGui.QColor('#479042')
+                longNameFace.bgcolor = QtGui.QColor('#479042')
+            else:
+#                node.img_style['fgcolor'] = '#af5b5b'
+                shortNameFace.bgcolor = QtGui.QColor('#9c3939')
+                longNameFace.bgcolor = QtGui.QColor('#9c3939')
+
+            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+            #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+            faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
+            #faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+            
         except KeyError:
             node.delete()
         except OSError, e:
