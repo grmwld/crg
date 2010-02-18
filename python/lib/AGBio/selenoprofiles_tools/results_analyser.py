@@ -9,8 +9,8 @@ import shutil
 sys.path.append('/users/rg/mmariotti/libraries')
 from MMlib import bbash
 from AGBio.io.common import *
-from AGBio.selenoprofiles_tools.files.p2g import *
-from AGBio.selenoprofiles_tools.files.b_secisearch import *
+from AGBio.selenoprofiles_tools.files_analysers.p2g import *
+from AGBio.selenoprofiles_tools.files_analysers.b_secisearch import *
             
 
 class GenomeFolderParser(object):
@@ -36,6 +36,7 @@ class GenomeFolderParser(object):
         else:
             self.dirs = [os.path.join(self.rootdir, d) for d in dirs]
         self.notempty = []
+        self.excluded = []
         self.sec = {}
         self.cys = {}
         self.thr = {}
@@ -105,7 +106,8 @@ class GenomeFolderParser(object):
                                        self.arg,
                                        self.uga,
                                        self.ual,
-                                       self.bsecis] if pp]
+                                       self.secis_b] if pp]
+
 
     def parseResultFiles(self, p2g=False, bsecisearch=False, force=False):
         '''Calls a parsing function on each file of a given result.
@@ -117,19 +119,31 @@ class GenomeFolderParser(object):
             for proteink, proteinv in self.sec.items():
                 b_secisearcher = BSeciSearchWrapper('dull', 'dul', 1, 1)
                 for hitk, hitv in proteinv.items():
-                    outdir = '.'.join([proteink,
-                                       str(hitk),
-                                       'selenoproteine'
-                                       'bsecis'])
-                    os.mkdir(outdir)
-                    cdsfile = [f for f in hitv if f.endswith('.cds')][0]
+                    outdir = os.path.join(self.rootdir,
+                                          'output',
+                                          '.'.join([proteink,
+                                                    str(hitk),
+                                                    'selenocysteine',
+                                                    'bsecis']))
+                    try:
+                        os.mkdir(outdir)
+                    except OSError, (e):
+                        if e.errno == 17:
+                            pass
+                    cdsfile = os.path.join(self.rootdir,
+                                           'output',
+                                           [f for f in hitv if f.endswith('.cds')][0])
                     b_secisearcher.infile = cdsfile
                     b_secisearcher.outdir = outdir
+                    print b_secisearcher.cline
                     b_secisearcher.run()
                     bs_output = os.path.join(outdir, 'bsecis_containing_sequences')
                     if not isFileEmpty(bs_output):
                         self._update_dict('bsecis', outdir)
                         self._update_dict('selenocysteine', outdir)
+                    else:
+                        print 'Removing', outdir
+                        shutil.rmtree(outdir)
         if p2g:
             for case in self.notempty:
                 for proteink, proteinv in case.items():
@@ -138,6 +152,16 @@ class GenomeFolderParser(object):
                         p2g_parser = P2G_Parser(p2gfile)
                         p2g_parser.parse()
 
+    def isexcluded(self, case):
+        ccase = getattr(self, case)
+        if self.excluded:
+            for prot, hit in self.excluded:
+                if not (prot in ccase and hit in ccase[prot]):
+                    return False
+            return True
+        else:
+            return False
+
     def _keep(self, filename):
         trash = ['.ali', '.hit']
         for i in trash:
@@ -145,32 +169,27 @@ class GenomeFolderParser(object):
                 return False
         return True
 
-    def _get_hit_num(self, filename, case):
-        spe_cases = ('std', 'non_std', 'twil')
+    def _get_hit_info(self, filename, case):
+        spe_case1 = ('std', 'non_std', 'twil')
+        spe_case2 = ('bsecis')
         if case not in self.kw2dict.keys():
             raise 'Unknown case : ' + case
-        ff = filename.split('.')
-        if case not in spe_cases:
-            index = ff.index(case) - 1
-        else:
-            index = ff.index(case) - 3
-        return int(ff[index])
-
-    def _get_prot_name(self, filename, case):
-        spe_cases = ('std', 'non_std', 'twil')
         parts = filename.split('.')
-        name = parts[0]
-        if case not in spe_cases:
-            index = parts.index(case) - 1
-        else:
+        index = None
+        if case in spe_case1:
             index = parts.index(case) - 3
-        return '.'.join(parts[:index])
+        elif case in spe_case2:
+            index = parts.index(case) - 2
+        else:
+            index = parts.index(case) - 1
+        return ['.'.join(parts[:index]),
+                int(parts[index])]
 
     def _update_dict(self, keyword, filename):
         t_dict = {}
         t_dict.update(self.kw2dict[keyword])
-        protname = self._get_prot_name(filename, keyword)
-        hit_num = self._get_hit_num(filename, keyword)
+        protname, hit_num = self._get_hit_info(filename, keyword)
+        exclusionfile = filename.split('.')[-1] == 'exclude_from_tree'
         if protname in t_dict:
             if hit_num in t_dict[protname]:
                 t_dict[protname][hit_num].append(filename)
@@ -179,10 +198,16 @@ class GenomeFolderParser(object):
         else:
             t_dict[protname] = {hit_num : [filename]}
         self.kw2dict[keyword].update(t_dict)
+        if exclusionfile:
+            self.excluded.append([protname, hit_num])
 
 
 class ResultFolderParser(object):
-    pass
+    '''Parser for whole result folder, containing several genomes.
+    '''
+    def __init__(self, folder, lookat='output'):
+        rootfolder = os.path.abspath(folder)
+        self._genomes = [d for d in os.listdir(folder) if os.path.isdir(d)]
 
 
 def main():
