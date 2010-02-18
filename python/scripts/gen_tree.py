@@ -122,36 +122,41 @@ def layout(node):
 
             for col, protname in enumerate(prots2col):
                 prot_count = 0
-                if protname not in protnames:
+                if protname in sp_parser.cys.keys() \
+                       and not sp_parser.isexcluded('cys'):
+                    prot_count += 1
+                    faces.add_face_to_node(facecys, node,
+                                           col + 2,
+                                           aligned=True)
+                if protname in sp_parser.sec.keys() \
+                       and not sp_parser.isexcluded('sec'):
+                    has_sec = True
+                    prot_count += 1
+                    if protname in sp_parser.secis_b.keys():
+                        faces.add_face_to_node(facesec_b, node,
+                                               col + 2,
+                                               aligned=True)
+                    else:
+                        faces.add_face_to_node(facesec, node,
+                                               col + 2,
+                                               aligned=True)
+                if protname in sp_parser.thr.keys() \
+                       and not sp_parser.isexcluded('thr'):
+                    prot_count += 1
+                    faces.add_face_to_node(facethr, node,
+                                           col + 2,
+                                           aligned=True)
+                if protname in sp_parser.arg.keys() \
+                       and not sp_parser.isexcluded('arg'):
+                    prot_count += 1
+                    faces.add_face_to_node(facearg, node,
+                                           col + 2,
+                                           aligned=True)
+                if prot_count == 0:
                     faces.add_face_to_node(facenan, node,
                                            col + 2,
                                            aligned=True)
-                else:
-                    if protname in sp_parser.cys.keys() \
-                           and not sp_parser.isexcluded('cys'):
-                        faces.add_face_to_node(facecys, node,
-                                               col + 2,
-                                               aligned=True)
-                    if protname in sp_parser.sec.keys():
-                        has_sec = True
-                        if protname in sp_parser.secis_b.keys():
-                            faces.add_face_to_node(facesec_b, node,
-                                                   col + 2,
-                                                   aligned=True)
-                        else:
-                            faces.add_face_to_node(facesec, node,
-                                                   col + 2,
-                                                   aligned=True)
-                    if protname in sp_parser.thr.keys() \
-                           and not sp_parser.isexcluded('thr'):
-                        faces.add_face_to_node(facethr, node,
-                                               col + 2,
-                                               aligned=True)
-                    if protname in sp_parser.arg.keys() \
-                           and not sp_parser.isexcluded('arg'):
-                        faces.add_face_to_node(facearg, node,
-                                               col + 2,
-                                               aligned=True)
+
             if has_sec:
                 node.img_style['fgcolor'] = '#75af51'
                 shortNameFace.fgcolor = QtGui.QColor('#479042')
