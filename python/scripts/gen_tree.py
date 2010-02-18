@@ -18,9 +18,9 @@ from PyQt4 import QtGui
 
 
 MAX_SN_LEN = 10
-MAX_LN_LEN = 70
+MAX_LN_LEN = 80
 
-species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_Ellin6076_',
+bact_base_species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_usitatus_Ellin6076_',
            'Candidatus_Koribacter_versatilis_Ellin345_' : 'Acidobacteria_bacterium_Ellin345_',
            'Synechococcus_sp._JA-2-3Ba_2-13_' : 'Synechococcus_sp._JA-2-3Ba2-13_',
            'Baumannia_cicadellinicola_str._Hc__Homalodisca_coagulata_' : 'Baumannia_cicadellinicola_str._Hc_Homalodisca_coagulata_',
@@ -111,8 +111,9 @@ def layout(node):
                 sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
 
             protnames = set()
-            for tt in sp_parser.notempty:
-                protnames.update(tt.keys())
+
+            for keyword in sp_parser.notempty:
+                protnames.update(keyword.keys())
             protnames = list(protnames)
 
             for protname in protnames:
@@ -120,37 +121,41 @@ def layout(node):
                     prots2col.append(protname)
 
             for col, protname in enumerate(prots2col):
-                    if protname not in protnames:
-                        faces.add_face_to_node(facenan, node,
+                prot_count = 0
+                if protname not in protnames:
+                    faces.add_face_to_node(facenan, node,
+                                           col + 2,
+                                           aligned=True)
+                else:
+                    if protname in sp_parser.cys.keys() \
+                           and not sp_parser.isexcluded('cys'):
+                        faces.add_face_to_node(facecys, node,
                                                col + 2,
                                                aligned=True)
-                    else:
-                        if protname in sp_parser.cys.keys():
-                            faces.add_face_to_node(facecys, node,
+                    if protname in sp_parser.sec.keys():
+                        has_sec = True
+                        if protname in sp_parser.secis_b.keys():
+                            faces.add_face_to_node(facesec_b, node,
                                                    col + 2,
                                                    aligned=True)
-                        if protname in sp_parser.sec.keys():
-                            has_sec = True
-                            if protname in sp_parser.secis_b.keys():
-                                faces.add_face_to_node(facesec_b, node,
-                                                       col + 2,
-                                                       aligned=True)
-                            else:
-                                faces.add_face_to_node(facesec, node,
-                                                       col + 2,
-                                                       aligned=True)
-                        if protname in sp_parser.thr.keys():
-                            faces.add_face_to_node(facethr, node,
+                        else:
+                            faces.add_face_to_node(facesec, node,
                                                    col + 2,
                                                    aligned=True)
-                        if protname in sp_parser.arg.keys():
-                            faces.add_face_to_node(facearg, node,
-                                                   col + 2,
-                                                   aligned=True)
+                    if protname in sp_parser.thr.keys() \
+                           and not sp_parser.isexcluded('thr'):
+                        faces.add_face_to_node(facethr, node,
+                                               col + 2,
+                                               aligned=True)
+                    if protname in sp_parser.arg.keys() \
+                           and not sp_parser.isexcluded('arg'):
+                        faces.add_face_to_node(facearg, node,
+                                               col + 2,
+                                               aligned=True)
             if has_sec:
-#                node.img_style['fgcolor'] = '#75af51'
-                shortNameFace.bgcolor = QtGui.QColor('#479042')
-                longNameFace.bgcolor = QtGui.QColor('#479042')
+                node.img_style['fgcolor'] = '#75af51'
+                shortNameFace.fgcolor = QtGui.QColor('#479042')
+#                longNameFace.bgcolor = QtGui.QColor('#479042')
             else:
 #                node.img_style['fgcolor'] = '#af5b5b'
                 shortNameFace.bgcolor = QtGui.QColor('#9c3939')
@@ -162,6 +167,7 @@ def layout(node):
             #faces.add_face_to_node(species_separator, node, column=1, aligned=True)
             
         except KeyError:
+            print traceback.print_exc()
             node.delete()
         except OSError, e:
             if e.errno == 2:
@@ -169,7 +175,6 @@ def layout(node):
         except Exception, e:
             print e
             print traceback.print_exc()
-            if node.name.startswith('H'): print '=====', node.name, '====='
 
     else:
         node.img_style['size'] = 0
@@ -200,6 +205,18 @@ def main():
     parser.add_option('-b', '--bsecisearch',
                       action='store_true', dest='bsecisearch', default=False,
                       help='search for bSECIS elements before building the tree.')
+
+    parser.add_option('-P', '--protist_tree',
+                      action='store_true', dest='protist_tree', default=False,
+                      help='protist tree.' )
+
+    parser.add_option('-A', '--archaeal_tree',
+                      action='store_true', dest='archaeal_tree', default=False,
+                      help='archaeal tree.')
+
+    parser.add_option('-B', '--bacterial_tree',
+                      action='store_true', dest='bacterial_tree', default=False,
+                      help='bacterial tree.')
     
     parser.add_option('-R', '--resources',
                       dest='res_folder',
@@ -210,7 +227,12 @@ def main():
 
     (options, args) = parser.parse_args()
 
+    if options.protist_tree + options.archaeal_tree + options.bacterial_tree != 1:
+        parser.error('You must choose ONE domain of life')
+
+    global domain_of_life
     global g_genomes
+    global species
     global resfolder
     global bsecisearchoption
     global facecys, facesec, facesec_b, facearg, facethr, facenan
@@ -220,6 +242,10 @@ def main():
     facearg = faces.ImgFace(options.res_folder + 'arg.png')
     facethr = faces.ImgFace(options.res_folder + 'thr.png')
     facenan = faces.ImgFace(options.res_folder + 'nan.png')
+
+    if options.protist_tree: species = {}
+    elif options.archaeal_tree: species = {}
+    elif options.bacterial_tree: species = bact_base_species
 
     g_genomes = os.listdir(options.sp_res_folder)
 

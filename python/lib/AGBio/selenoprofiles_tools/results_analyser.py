@@ -36,6 +36,7 @@ class GenomeFolderParser(object):
         else:
             self.dirs = [os.path.join(self.rootdir, d) for d in dirs]
         self.notempty = []
+        self.excluded = []
         self.sec = {}
         self.cys = {}
         self.thr = {}
@@ -107,6 +108,7 @@ class GenomeFolderParser(object):
                                        self.ual,
                                        self.secis_b] if pp]
 
+
     def parseResultFiles(self, p2g=False, bsecisearch=False, force=False):
         '''Calls a parsing function on each file of a given result.
 
@@ -150,6 +152,16 @@ class GenomeFolderParser(object):
                         p2g_parser = P2G_Parser(p2gfile)
                         p2g_parser.parse()
 
+    def isexcluded(self, case):
+        ccase = getattr(self, case)
+        if self.excluded:
+            for prot, hit in self.excluded:
+                if not (prot in ccase and hit in ccase[prot]):
+                    return False
+            return True
+        else:
+            return False
+
     def _keep(self, filename):
         trash = ['.ali', '.hit']
         for i in trash:
@@ -177,6 +189,7 @@ class GenomeFolderParser(object):
         t_dict = {}
         t_dict.update(self.kw2dict[keyword])
         protname, hit_num = self._get_hit_info(filename, keyword)
+        exclusionfile = filename.split('.')[-1] == 'exclude_from_tree'
         if protname in t_dict:
             if hit_num in t_dict[protname]:
                 t_dict[protname][hit_num].append(filename)
@@ -185,6 +198,8 @@ class GenomeFolderParser(object):
         else:
             t_dict[protname] = {hit_num : [filename]}
         self.kw2dict[keyword].update(t_dict)
+        if exclusionfile:
+            self.excluded.append([protname, hit_num])
 
 
 class ResultFolderParser(object):
