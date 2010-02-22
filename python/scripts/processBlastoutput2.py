@@ -42,7 +42,9 @@ def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
     '''
     topseqs = Fasta.SequenceList()
     evalue = startevalue + 1
-    while len(topseqs) > maxnumseqs or evalue == startevalue + 1:
+    count = 0
+    while (len(topseqs) > maxnumseqs or evalue == startevalue + 1) and evalue >= -400:
+        prev_top_seqs = topseqs
         topseqs = Fasta.SequenceList()
         evalue -= 1
         for seq in seqs:
@@ -51,7 +53,7 @@ def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
                 topseqs.append(seq)
         if verbose:
             sys.stderr.write( '        >>> evalue : 1e' + str(evalue) + '.\n' )
-            sys.stderr.write( '            ' + str(len(topseqs)) + ' matching sequences.\n' )
+            sys.stderr.write( '            ' + str(len(topseqs)) + ' matching sequences\n' )
     return (topseqs, evalue)
 
 def fmtOptPat(param, args):
