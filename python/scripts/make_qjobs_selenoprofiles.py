@@ -113,10 +113,10 @@ def main():
             tjf.write(' '.join(( 'python', options.sppath,
                                  os.path.abspath(options.outputfolder),
                                  ' '.join(options.sp_args.split(',')),
-                                 '-genomes_folder', options.genomesfolder,
+                                 '-genomes_folder', os.path.abspath(options.genomesfolder),
                                  '-genome', genome,
-                                 '-profiles', options.profilesfolder,
-                                 '-i', options.profileslist,
+                                 '-profiles', os.path.abspath(options.profilesfolder),
+                                 '-i', os.path.abspath(options.profileslist),
                                  '-temp', tmpfold,
                                  '&>', os.path.join(logs_dir, genome + '.out.log') + '\n')))
             tjf.write('rm -r ' + tmpfold + '\n')
