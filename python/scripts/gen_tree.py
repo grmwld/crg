@@ -101,75 +101,77 @@ def layout(node):
             longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
                                           ftype='courier',
                                           fsize=12)
-        
-            fp = os.path.join(resfolder, species[sanitize(node.name)])
-            sp_parser = GenomeFolderParser(fp)
-            sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
-            if bsecisearchoption:
-                sp_parser.parseResultFiles(p2g=False, bsecisearch=True)
+
+            for folder in resultfolders:
+            
+                fp = os.path.join(folder, species[sanitize(node.name)])
                 sp_parser = GenomeFolderParser(fp)
                 sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
+                if bsecisearchoption:
+                    sp_parser.parseResultFiles(p2g=False, bsecisearch=True)
+                    sp_parser = GenomeFolderParser(fp)
+                    sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
 
-            protnames = set()
+                protnames = set()
 
-            for keyword in sp_parser.notempty:
-                protnames.update(keyword.keys())
-            protnames = list(protnames)
+                for keyword in sp_parser.notempty:
+                    protnames.update(keyword.keys())
+                protnames = list(protnames)
 
-            for protname in protnames:
-                if protname not in prots2col:
-                    prots2col.append(protname)
+                for protname in protnames:
+                    if protname not in prots2col:
+                        prots2col.append(protname)
 
-            for col, protname in enumerate(prots2col):
-                prot_count = 0
-                if protname in sp_parser.cys.keys() \
-                       and not sp_parser.isexcluded('cys'):
-                    prot_count += 1
-                    faces.add_face_to_node(facecys, node,
-                                           col + 2,
-                                           aligned=True)
-                if protname in sp_parser.sec.keys() \
-                       and not sp_parser.isexcluded('sec'):
-                    has_sec = True
-                    prot_count += 1
-                    if protname in sp_parser.secis_b.keys():
-                        faces.add_face_to_node(facesec_b, node,
+                for col, protname in enumerate(prots2col):
+                    prot_count = 0
+                    if protname in sp_parser.cys.keys() \
+                           and not sp_parser.isexcluded('cys'):
+                        prot_count += 1
+                        faces.add_face_to_node(facecys, node,
                                                col + 2,
                                                aligned=True)
-                    else:
-                        faces.add_face_to_node(facesec, node,
+                    if protname in sp_parser.sec.keys() \
+                           and not sp_parser.isexcluded('sec'):
+                        has_sec = True
+                        prot_count += 1
+                        if protname in sp_parser.secis_b.keys():
+                            faces.add_face_to_node(facesec_b, node,
+                                                   col + 2,
+                                                   aligned=True)
+                        else:
+                            faces.add_face_to_node(facesec, node,
+                                                   col + 2,
+                                                   aligned=True)
+                    if protname in sp_parser.thr.keys() \
+                           and not sp_parser.isexcluded('thr'):
+                        prot_count += 1
+                        faces.add_face_to_node(facethr, node,
                                                col + 2,
                                                aligned=True)
-                if protname in sp_parser.thr.keys() \
-                       and not sp_parser.isexcluded('thr'):
-                    prot_count += 1
-                    faces.add_face_to_node(facethr, node,
-                                           col + 2,
-                                           aligned=True)
-                if protname in sp_parser.arg.keys() \
-                       and not sp_parser.isexcluded('arg'):
-                    prot_count += 1
-                    faces.add_face_to_node(facearg, node,
-                                           col + 2,
-                                           aligned=True)
-                if prot_count == 0:
-                    faces.add_face_to_node(facenan, node,
-                                           col + 2,
-                                           aligned=True)
+                    if protname in sp_parser.arg.keys() \
+                           and not sp_parser.isexcluded('arg'):
+                        prot_count += 1
+                        faces.add_face_to_node(facearg, node,
+                                               col + 2,
+                                               aligned=True)
+                    if prot_count == 0:
+                        faces.add_face_to_node(facenan, node,
+                                               col + 2,
+                                               aligned=True)
 
-            if has_sec:
-                node.img_style['fgcolor'] = '#75af51'
-                shortNameFace.fgcolor = QtGui.QColor('#479042')
-#                longNameFace.bgcolor = QtGui.QColor('#479042')
-            else:
-#                node.img_style['fgcolor'] = '#af5b5b'
-                shortNameFace.bgcolor = QtGui.QColor('#9c3939')
-                longNameFace.bgcolor = QtGui.QColor('#9c3939')
+                if has_sec:
+                    node.img_style['fgcolor'] = '#75af51'
+                    shortNameFace.fgcolor = QtGui.QColor('#479042')
+    #                longNameFace.bgcolor = QtGui.QColor('#479042')
+                else:
+    #                node.img_style['fgcolor'] = '#af5b5b'
+                    shortNameFace.bgcolor = QtGui.QColor('#9c3939')
+                    longNameFace.bgcolor = QtGui.QColor('#9c3939')
 
-            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-            #faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
-            faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
-            #faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+                faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+                ##faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+                faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
+                ##faces.add_face_to_node(species_separator, node, column=1, aligned=True)
             
         except KeyError:
             print traceback.print_exc()
@@ -194,9 +196,9 @@ def main():
                       help='input filename, newick tree.',
                       metavar='FILE')
     
-    parser.add_option('-s', '--selenoprofiles_results_folder',
+    parser.add_option('-s', '--selenoprofiles_results_folders',
                       dest='sp_res_folder',
-                      help='result folder of a selenoprofiles run.',
+                      help='result folders of a selenoprofiles run. If multiple folders are give, they should be coma separated.',
                       metavar='DIR')
 
     parser.add_option('-g', '--gui',
@@ -238,7 +240,7 @@ def main():
     global domain_of_life
     global g_genomes
     global species
-    global resfolder
+    global resultfolders
     global bsecisearchoption
     global facecys, facesec, facesec_b, facearg, facethr, facenan
     facecys = faces.ImgFace(options.res_folder + 'cys.png')
@@ -252,9 +254,11 @@ def main():
     elif options.archaeal_tree: species = {}
     elif options.bacterial_tree: species = bact_base_species
 
-    g_genomes = os.listdir(options.sp_res_folder)
+    resultfolders = [os.path.abspath(f) for f in options.sp_res_folder.split(',')]
+    print resultfolders
+    g_genomes = list(set(flatten([os.listdir(folder) for folder in resultfolders])))
+    print g_genomes
 
-    resfolder = options.sp_res_folder
     bsecisearchoption = options.bsecisearch
     
     t = Tree(options.infilename)
