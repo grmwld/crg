@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import with_statement
 import sys
 import os
 import optparse
@@ -58,15 +59,6 @@ bact_base_species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_u
            'Desulfovibrio_vulgaris_DP4_' : 'Desulfovibrio_vulgaris_subsp._vulgaris_DP4_'
            }
 
-prots2col = [['ahpd_like_1.1', 'ahpd_like_2.1','atpase_e1_e2.1','dio_like.1',
-             'dsba.1','dsbg_like.1','fdha.1','frhd.1','gpx.1',
-             'grda.1','grdb.1','mett.1','msra.1',
-             'os_hp2.1','os_hp2.2','prdb.1','prdb.2',
-             'prx_like_1.1','prx_like_2.1','prx_like_3.1','selw_like.1',
-             'sulft_2.1','sulft_3.1','usha_like.1','seld'],
-             ['arsc_1.1','dsre_like.1','fmdb.1','frx.1','gst.1','moeb.1',
-             'nadh_uo_e.1','osmc_like.1','trypsin_like.1','yhs.1','yhs.2']]
-
 
 def long2short(longname):
     ln = longname.split()
@@ -86,8 +78,22 @@ def sanitize(longname):
     t = t.replace(' ', '_')
     return t + '_'
 
-def layout(node):
+def parse_result_folders_file(ffile):
+    info = []
+    with open(ffile, 'r') as iff:
+        for line in iff:
+            ppath, names = line.split()
+            pppath = os.path.abspath(os.path.expanduser(ppath))
+            info.append({pppath:names.split(',')})
+    return info
 
+def getProts(ff):
+    return ff[ff.keys()[0]]
+
+def getFolder(ff):
+    return ff.keys()[0]
+
+def layout(node):
     if node.is_leaf():
         try:
             has_sec = False
@@ -104,11 +110,12 @@ def layout(node):
                                           ftype='courier',
                                           fsize=12)
 
-            for index, folder in enumerate(resultfolders):
-                protlist = prots2col[index]
+            for index, info_folder in enumerate(info):
+                folder = getFolder(info_folder)
+                protlist = getProts(info_folder)
                 before = 0
                 if index > 0:
-                    before = len(prots2col[index - 1])
+                    before = len(getProts(info[index - 1]))
             
                 fp = os.path.join(folder, species[sanitize(node.name)])
                 sp_parser = GenomeFolderParser(fp)
@@ -123,10 +130,6 @@ def layout(node):
                 for keyword in sp_parser.notempty:
                     protnames.update(keyword.keys())
                 protnames = list(protnames)
-
-                for protname in protnames:
-                    if protname not in prots2col:
-                        prots2col.append(protname)
 
                 for col, protname in enumerate(protlist):
                     prot_count = 0
@@ -202,10 +205,10 @@ def main():
                       help='input filename, newick tree.',
                       metavar='FILE')
     
-    parser.add_option('-s', '--selenoprofiles_results_folders',
-                      dest='sp_res_folder',
-                      help='result folders of a selenoprofiles run. If multiple folders are give, they should be coma separated.',
-                      metavar='DIR')
+    parser.add_option('-f', '--result_folders',
+                      dest='result_folders',
+                      help='file used to specify result folders and corresponding proteins. Each line should contain the path to a result folder and a coma separated list of proteins. The path and the list have to be separated by a space.',
+                      metavar='FILE')
 
     parser.add_option('-g', '--gui',
                       action='store_true', dest='gui', default=False,
@@ -247,6 +250,7 @@ def main():
     global g_genomes
     global species
     global resultfolders
+    global info
     global bsecisearchoption
     global facecys, facesec, facesec_b, facearg, facethr, facenan
     facecys = faces.ImgFace(options.res_folder + 'cys.png')
@@ -260,9 +264,12 @@ def main():
     elif options.archaeal_tree: species = {}
     elif options.bacterial_tree: species = bact_base_species
 
-    resultfolders = [os.path.abspath(os.path.expanduser(ff)) \
-                     for ff in options.sp_res_folder.split(',')]
+    info = parse_result_folders_file(options.result_folders)
+    print info
+    resultfolders = flatten([i.keys() for i in info])
+    print resultfolders
     g_genomes = list(set(flatten([os.listdir(folder) for folder in resultfolders])))
+    print g_genomes
 
     bsecisearchoption = options.bsecisearch
     
