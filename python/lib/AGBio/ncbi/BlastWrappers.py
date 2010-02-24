@@ -89,9 +89,7 @@ class FastaCmdWrapper(BaseCmdWrapper, HasOutFile):
                                 outfile)
         HasOutFile.__init__(self, '-o ', outfile)
         if entry:
-            print entry
             self.entry = entry
-            print self.entry
         if info:
             self.info = ' '
         if db:
