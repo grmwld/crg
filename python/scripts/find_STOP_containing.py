@@ -1,14 +1,16 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
+from __future__ import with_statement
 import os
 import sys
+sys.path.append('/users/rg/agrimaldi/Code/python/python/lib')
 sys.path.append('/users/rg/mmariotti/libraries')
 import shutil
 import subprocess
 import optparse
 import time
 from AGBio.Utilities import *
-from profiles_classes import *
+from profiles_classes import parse_blast_output
 
 def preformat(filename, pdir='/home/agrimaldi/temp/'):
     tmpfolder = genTempfilename(pdir)
@@ -62,7 +64,7 @@ def main():
             
     except IOError:
         sys.stderr.write('/nFile ' + infile + ' : not found./n/n')
-    except Exception as e:
+    except Exception (e):
         print e
     finally:
         try:
