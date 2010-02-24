@@ -58,12 +58,14 @@ bact_base_species = {'Candidatus_Solibacter_usitatus_Ellin6076_' : 'Solibacter_u
            'Desulfovibrio_vulgaris_DP4_' : 'Desulfovibrio_vulgaris_subsp._vulgaris_DP4_'
            }
 
-prots2col = ['ahpd_like_1.1', 'ahpd_like_2.1','atpase_e1_e2.1','dio_like.1',
+prots2col = [['ahpd_like_1.1', 'ahpd_like_2.1','atpase_e1_e2.1','dio_like.1',
              'dsba.1','dsbg_like.1','fdha.1','frhd.1','gpx.1',
              'grda.1','grdb.1','mett.1','msra.1',
              'os_hp2.1','os_hp2.2','prdb.1','prdb.2',
              'prx_like_1.1','prx_like_2.1','prx_like_3.1','selw_like.1',
-             'sulft_2.1','sulft_3.1','usha_like.1','seld']
+             'sulft_2.1','sulft_3.1','usha_like.1','seld'],
+             ['arsc_1.1','dsre_like.1','fmdb.1','frx.1','gst.1','moeb.1',
+             'nadh_uo_e.1','osmc_like.1','trypsin_like.1','yhs.1','yhs.2']]
 
 
 def long2short(longname):
@@ -102,7 +104,11 @@ def layout(node):
                                           ftype='courier',
                                           fsize=12)
 
-            for folder in resultfolders:
+            for index, folder in enumerate(resultfolders):
+                protlist = prots2col[index]
+                before = 0
+                if index > 0:
+                    before = len(prots2col[index - 1])
             
                 fp = os.path.join(folder, species[sanitize(node.name)])
                 sp_parser = GenomeFolderParser(fp)
@@ -122,13 +128,13 @@ def layout(node):
                     if protname not in prots2col:
                         prots2col.append(protname)
 
-                for col, protname in enumerate(prots2col):
+                for col, protname in enumerate(protlist):
                     prot_count = 0
                     if protname in sp_parser.cys.keys() \
                            and not sp_parser.isexcluded('cys'):
                         prot_count += 1
                         faces.add_face_to_node(facecys, node,
-                                               col + 2,
+                                               col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.sec.keys() \
                            and not sp_parser.isexcluded('sec'):
@@ -136,27 +142,27 @@ def layout(node):
                         prot_count += 1
                         if protname in sp_parser.secis_b.keys():
                             faces.add_face_to_node(facesec_b, node,
-                                                   col + 2,
+                                                   col + 2 + before,
                                                    aligned=True)
                         else:
                             faces.add_face_to_node(facesec, node,
-                                                   col + 2,
+                                                   col + 2 + before,
                                                    aligned=True)
                     if protname in sp_parser.thr.keys() \
                            and not sp_parser.isexcluded('thr'):
                         prot_count += 1
                         faces.add_face_to_node(facethr, node,
-                                               col + 2,
+                                               col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.arg.keys() \
                            and not sp_parser.isexcluded('arg'):
                         prot_count += 1
                         faces.add_face_to_node(facearg, node,
-                                               col + 2,
+                                               col + 2 + before,
                                                aligned=True)
                     if prot_count == 0:
                         faces.add_face_to_node(facenan, node,
-                                               col + 2,
+                                               col + 2 + before,
                                                aligned=True)
 
                 if has_sec:
@@ -168,10 +174,10 @@ def layout(node):
                     shortNameFace.bgcolor = QtGui.QColor('#9c3939')
                     longNameFace.bgcolor = QtGui.QColor('#9c3939')
 
-                faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
-                ##faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
-                faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
-                ##faces.add_face_to_node(species_separator, node, column=1, aligned=True)
+            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+            ##faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
+            faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
+            ##faces.add_face_to_node(species_separator, node, column=1, aligned=True)
             
         except KeyError:
             print traceback.print_exc()
@@ -254,10 +260,9 @@ def main():
     elif options.archaeal_tree: species = {}
     elif options.bacterial_tree: species = bact_base_species
 
-    resultfolders = [os.path.abspath(f) for f in options.sp_res_folder.split(',')]
-    print resultfolders
+    resultfolders = [os.path.abspath(os.path.expanduser(ff)) \
+                     for ff in options.sp_res_folder.split(',')]
     g_genomes = list(set(flatten([os.listdir(folder) for folder in resultfolders])))
-    print g_genomes
 
     bsecisearchoption = options.bsecisearch
     
