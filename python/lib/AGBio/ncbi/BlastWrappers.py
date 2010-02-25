@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from AGBio.UtilityWrappers import *
+from AGBio.UtilityWrappers2 import *
 
 BLAST_BIN_DIR = '/usr/local/ncbi/blast/bin/'
 
@@ -19,8 +19,8 @@ class BlastBaseWrapper(BaseUtilityWrapper, HasOutFile):
 class BaseCmdWrapper(BlastBaseWrapper):
     '''
     '''
-    def __init__(self, utilitypath=None, entry=None, info=False, db='nr', target_only=True,
-                 outfile=None):
+    def __init__(self, utilitypath=None, entry=None,info=False,
+                 db='nr', target_only=True, outfile=None):
         '''
         '''
         BlastBaseWrapper.__init__(self, utilitypath, outfile)
@@ -33,9 +33,11 @@ class BaseCmdWrapper(BlastBaseWrapper):
         ## if target_only:
         ##     self['target_only'] = ['', '']
             
-    @property
-    def entry(self):
-        return self['entry']
+    @prop
+    def entry():
+        def fget(self):
+            return self['entry']
+        return locals()
 
     def setentry(self, opt, value):
         if value:
@@ -44,9 +46,11 @@ class BaseCmdWrapper(BlastBaseWrapper):
             del self['entry']
         self.updateCline()
         
-    @property
-    def info(self):
-        return self['info']
+    @prop
+    def info():
+        def fget(self):
+            return self['info']
+        return locals()
    
     def setinfo(self, opt, value):
         if value:
@@ -55,9 +59,11 @@ class BaseCmdWrapper(BlastBaseWrapper):
             del self['info']
         self.updateCline()
         
-    @property
-    def db(self):
-        return self['db']
+    @prop
+    def db():
+        def fget(self):
+            return self['db']
+        return locals()
     
     def setdb(self, opt, value):
         if value:
@@ -66,9 +72,11 @@ class BaseCmdWrapper(BlastBaseWrapper):
             del self['db']
         self.updateCline()
 
-    @property
-    def target_only(self):
-        return self['target_only']
+    @prop
+    def target_only():
+        def fget(self):
+            return self['target_only']
+        return locals()
    
     def settarget_only(self, opt, value):
         if value:
@@ -98,37 +106,41 @@ class FastaCmdWrapper(BaseCmdWrapper, HasOutFile):
             self.target_only = ' '
         self.updateCline()
 
-    @property
-    def entry(self):
-        return self['entry']
-    @entry.setter   
-    def entry(self, value):
-        BaseCmdWrapper.setentry(self, '-s ', value)
-        self.updateCline()
+    @prop
+    def entry():
+        def fget(self):
+            return self['entry']
+        def fset(self, value):
+            BaseCmdWrapper.setentry(self, '-s ', value)
+            self.updateCline()
+        return locals()
 
-    @property
-    def info(self):
-        return self['info']
-    @info.setter   
-    def info(self, value):
-        BaseCmdWrapper.setinfo(self, '-I ', value)
-        self.updateCline()
+    @prop
+    def info():
+        def fget(self):
+            return self['info']
+        def fset(self, value):
+            BaseCmdWrapper.setinfo(self, '-I ', value)
+            self.updateCline()
+        return locals()
 
-    @property
-    def db(self):
-        return self['db']
-    @db.setter
-    def db(self, value):
-        BaseCmdWrapper.setdb(self, '-d ', value)
-        self.updateCline()
+    @prop
+    def db():
+        def fget(self):
+            return self['db']
+        def fset(self, value):
+            BaseCmdWrapper.setdb(self, '-d ', value)
+            self.updateCline()
+        return locals()
 
-    @property
-    def target_only(self):
-        return self['target_only']
-    @target_only.setter   
-    def target_only(self, value):
-        BaseCmdWrapper.settarget_only(self, '-t ', value)
-        self.updateCline()
+    @prop
+    def target_only():
+        def fget(self):
+            return self['target_only']
+        def fset(self, value):
+            BaseCmdWrapper.settarget_only(self, '-t ', value)
+            self.updateCline()
+        return locals()
 
 
 class BlastDbCmdWrapper(BlastBaseWrapper):
@@ -151,46 +163,38 @@ class BlastDbCmdWrapper(BlastBaseWrapper):
             self._changeCmdOptLegacy()
         self.updateCline()
 
-    @property
-    def entry(self):
-        return self['entry']
-    @entry.setter   
-    def entry(self, value):
-        if value:
-            self['entry'] = ['-entry ', ','.join(value)]
-        elif 'entry' in self.keys():
-            del self['entry']
-        self.updateCline()
+    @prop
+    def entry():
+        def fget(self):
+            return self['entry']
+        def fset(self, value):
+            BaseCmdWrapper.settarget_only(self, '-entry ', value)
+            self.updateCline()
+        return locals()
         
-    @property
-    def info(self):
-        return self['info']
-    @info.setter   
-    def info(self, value):
-        if value:
-            self['info'] = ['-info', '']
-        elif 'info' in self.keys():
-            del self['info']
-        self.updateCline()
+    @prop
+    def info():
+        def fget(self):
+            return self['info']
+        def fset(self, value):
+            BaseCmdWrapper.settarget_only(self, '-info ', value)
+            self.updateCline()
+        return locals()
         
-    @property
-    def db(self):
-        return self['db']
-    @db.setter
-    def db(self, value):
-        if value:
-            self['db'] = ['-db ', value]
-        elif 'db' in self.keys():
-            del self['db']
-        self.updateCline()
+    @prop
+    def db():
+        def fget(self):
+            return self['db']
+        def fset(self, value):
+            BaseCmdWrapper.settarget_only(self, '-db ', value)
+            self.updateCline()
+        return locals()
 
-    @property
-    def target_only(self):
-        return self['target_only']
-    @target_only.setter   
-    def target_only(self, value):
-        if value:
-            self['target_only'] = ['-target_only', '']
-        elif 'target_only' in self.keys():
-            del self['target_only']
-        self.updateCline()
+    @prop
+    def target_only():
+        def fget(self):
+            return self['target_only']
+        def fset(self, value):
+            BaseCmdWrapper.settarget_only(self, '-target_only ', value)
+            self.updateCline()
+        return locals()
