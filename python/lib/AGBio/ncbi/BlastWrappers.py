@@ -6,6 +6,7 @@ from AGBio.UtilityWrappers2 import *
 
 BLAST_BIN_DIR = '/usr/local/ncbi/blast/bin/'
 
+
 class BlastBaseWrapper(BaseUtilityWrapper, HasOutFile):
     """Base class for the NCBI blast tools.
     """
@@ -196,5 +197,83 @@ class BlastDbCmdWrapper(BlastBaseWrapper):
             return self['target_only']
         def fset(self, value):
             BaseCmdWrapper.settarget_only(self, '-target_only ', value)
+            self.updateCline()
+        return locals()
+
+
+class BlastAllWrapper(BaseUtilityWrapper, HasInFile, HasOutFile):
+    def __init__(self, infile, outfile, exe='blastall', flavour='blastp',
+                 db='nr', format='xml', lcomplexfilt=False, gis=False, ncore=1):
+        BaseUtilityWrapper.__init__(self, exe)
+        HasInFile.__init__(self, infile)
+        HasOutFile.__init__(self, '-o ', outfile)
+        self.exe = exe
+        self.flavour = flavour
+        self.db = db
+        self.format = format
+        self.lcomplexfilt = lcomplexfilt
+        self.gis = gis
+        self.ncore = ncore
+
+    @prop
+    def flavour():
+        def fget(self):
+            return self['flavour']
+        def fset(self, value):
+            if value not in ('blastp', 'blastn', 'tblastn'):
+                raise 'Unknown flavour.'
+            self['flavour'] = ['-p ', value]
+            self.updateCline()
+        return locals()
+
+    @prop
+    def db():
+        def fget(self):
+            return self['db']
+        def fset(self, value):
+            self['db'] = ['-d ', value]
+            self.updateCline()
+        return locals()
+
+    @prop
+    def format():
+        def fget(self):
+            return self['format']
+        def fset(self, value):
+            dd = {'plain_text':'0',
+                  'xml':'7'}
+            self['format'] = ['-m ', dd[value]]
+            self.updateCline()
+        return locals()
+
+    @prop
+    def lcomplexfilt():
+        def fget(self):
+            return self['lcomplexfilt']
+        def fset(self, value):
+            if value: vv = 'T'
+            else: vv = 'F'
+            self['lcomplexfilt'] = ['-F ', vv]
+            self.updateCline()
+        return locals()
+
+    @prop
+    def gis():
+        def fget(self):
+            return self['gis']
+        def fset(self, value):
+            if value:
+                self['gis'] = ['-I', '']
+            elif 'gis' in self.keys():
+                del self['gis']
+            self.updateCline()
+        return locals()
+
+    @prop
+    def ncore():
+        def fget(self):
+            return self['ncore']
+        def fset(self, value):
+            self['ncore'] = ['-a ', str(value)]
             self.updateCline()
         return locals()
