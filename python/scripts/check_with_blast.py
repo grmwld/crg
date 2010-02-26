@@ -21,14 +21,15 @@ class HeadEvalueDict(BiDict):
     def reverse():
         def fget(self):
             output = {}
-            for k, v in self.items():
+            for key, value in self.items():
                 try:
-                    if v not in output:
-                        output[v] = k
-                    else:
-                        output[v] = max(float(k), float(output[v]))
+                    for v in value:
+                        if v not in output:
+                            output[v] = key
+                        else:
+                            output[v] = min(float(key), float(output[v]))
                 except TypeError:
-                    print v, k
+                    print v, key
                     sys.exit('beuh')
             return output
         return locals()
@@ -96,15 +97,14 @@ def main():
     
     blaster = BlastAllWrapper(outputentryfa, outputblast,
                               flavour=options.blast_flavour,
-                              db=options.dbc, gis=True, ncore=options.ncore,
-                              evalue='1e-5')
+                              db=options.dbc, gis=True, ncore=options.ncore)
 
     xmlparser = PsiBlastXMLParser(outputblast)
 
     print fetcher.cline
-    #fetcher.run()
+    fetcher.run()
     print blaster.cline
-    #blaster.run()
+    blaster.run()
 
     with open(outputblast, 'r') as iff:
         xmlparser = PsiBlastXMLParser(iff)
@@ -126,8 +126,12 @@ def main():
                     results[evalue].append(header)
         nseqs = len(results.reverse)
 
-    print results
-    print results.reverse
+    for k, v in results.items():     
+        if float(k) < 1e-80:
+            print k, v
+        
+    for k, v in results.reverse.items():
+        print k, v
             
 
 if __name__ == '__main__':
