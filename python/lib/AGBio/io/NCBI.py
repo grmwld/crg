@@ -7,7 +7,7 @@ import re
 from Bio.Blast import NCBIStandalone, NCBIXML
 from AGBio.io.common import *
 import AGBio.io.Fasta as Fasta
-import AGBio.UtilityWrappers as UtilityWrappers
+from AGBio.Utilities import *
 
 
 class PsiBlastParser(NCBIStandalone.PSIBlastParser):
@@ -46,6 +46,7 @@ class PsiBlastParser(NCBIStandalone.PSIBlastParser):
                         #sys.stderr.write(str(repr(sequences)))
         return sequences
 
+
 class PsiBlastXMLParser(NCBIXML.BlastParser):
     """Parser for psiblast outputs in xml format.
     """
@@ -56,20 +57,22 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
         NCBIXML.BlastParser.__init__(self)
         self._blastoutput = blastoutput
 
-    @property
-    def blastoutput(self):
-        return self._blastoutput
-    @blastoutput.setter   
-    def blastoutput(self, value):
-        self._blastoutput = value
+    @prop
+    def blastoutput():
+        def fget(self):
+            return self._blastoutput
+        def fset(self, value):
+            self._blastoutput = value
+        return locals()
 
-    @property
-    def results(self):
-        return self._results
-    @results.setter   
-    def results(self, value):
-        self._results = value
-        
+    @prop
+    def results():
+        def fget(self):
+            return self._results
+        def fset(self, value):
+            self._results = value
+        return locals()
+    
     def parse(self):
         self.results = NCBIXML.parse(self.blastoutput)
 
@@ -83,11 +86,11 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
         - `ALL`: Get everything
         """
         ffmt = []
-        
-        if outfile != sys.stdout:
-            outf = open(outfile, 'w')
-        else:
+
+        if outfile == sys.stdout or type(outfile).__name__ == 'StringO':
             outf = outfile
+        else:
+            outf = open(outfile, 'w')
         
         if fmt:
             ffmt = self._parseFormat(fmt)
