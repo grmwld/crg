@@ -203,9 +203,10 @@ class BlastDbCmdWrapper(BlastBaseWrapper):
 
 class BlastAllWrapper(BaseUtilityWrapper, HasInFile, HasOutFile):
     def __init__(self, infile, outfile, exe='blastall', flavour='blastp',
-                 db='nr', format='xml', lcomplexfilt=False, gis=False, ncore=1):
+                 db='nr', format='xml', lcomplexfilt=False, gis=False,
+                 ncore=1, evalue=10):
         BaseUtilityWrapper.__init__(self, exe)
-        HasInFile.__init__(self, infile)
+        HasInFile.__init__(self, '-i ', infile)
         HasOutFile.__init__(self, '-o ', outfile)
         self.exe = exe
         self.flavour = flavour
@@ -214,6 +215,7 @@ class BlastAllWrapper(BaseUtilityWrapper, HasInFile, HasOutFile):
         self.lcomplexfilt = lcomplexfilt
         self.gis = gis
         self.ncore = ncore
+        self.evalue = evalue
 
     @prop
     def flavour():
@@ -275,5 +277,14 @@ class BlastAllWrapper(BaseUtilityWrapper, HasInFile, HasOutFile):
             return self['ncore']
         def fset(self, value):
             self['ncore'] = ['-a ', str(value)]
+            self.updateCline()
+        return locals()
+    
+    @prop
+    def evalue():
+        def fget(self):
+            return self['evalue']
+        def fset(self, value):
+            self['evalue'] = ['-e ', str(value)]
             self.updateCline()
         return locals()
