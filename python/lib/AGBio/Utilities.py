@@ -43,3 +43,23 @@ def flatten(x):
         else:
             result.append(el)
     return result
+
+
+def prop(fcn):
+    return property(**fcn())
+
+
+class BiDict(dict):
+    def __init__(self, dictionary={}):
+        self.update(dictionary)
+    @prop
+    def reverse():
+        def fget(self):
+            output = {}
+            for k, v in self.items():
+                if v not in output:
+                    output[v] = list(k)
+                else:
+                    output[v].append(k)
+            return output
+        return locals()
