@@ -35,6 +35,13 @@ class HeadEvalueDict(BiDict):
         return locals()
 
 
+def parsefilters(filename):
+    filters = []
+    with open(filename, 'r') as iff:
+        for line in iff:
+            filters.extend([f.strip() for f in line.split(',')])
+    return filters
+
 def main():
 
     parser = optparse.OptionParser()
@@ -43,6 +50,16 @@ def main():
                       dest='gi_entry',
                       help='GI to check against the database',
                       metavar='GI')
+
+    parser.add_option('-q', '--query',
+                      dest='fasta_query',
+                      help='query in fasta format',
+                      metavar='FILE')
+
+    parser.add_option('-o', '--output',
+                      dest='outputfile',
+                      help='name of the output file. default is stdout',
+                      metavar='FILE')
 
     parser.add_option('-b', '--blast_flavour',
                       dest='blast_flavour',
@@ -71,8 +88,8 @@ def main():
                       help='number of top hits to consider.',
                       metavar='INT')
 
-    parser.add_option('-f', '--config_file',
-                      dest='config_file',
+    parser.add_option('-f', '--filters_file',
+                      dest='filters_file',
                       help='location of the file containing filters.',
                       metavar='FILE')
 
@@ -83,7 +100,8 @@ def main():
 
     parser.set_defaults(temp = '/tmp/',
                         ncore = 1,
-                        num_top_hits = 1)
+                        num_top_hits = 1,
+                        outputfile = sys.stdout)
 
     (options, args) = parser.parse_args()
 
@@ -91,11 +109,16 @@ def main():
     outputblast = os.path.join(options.temp, options.gi_entry + '.xml')
     outputpf = os.path.join(options.temp, options.gi_entry + '.index')
 
+    includefilters = parsefilters(options.filters_file)
 
-    fetcher = FastaCmdWrapper([options.gi_entry], db=options.dbf,
-                              outfile=outputentryfa)
+    if options.gi_entry:
+        fetcher = FastaCmdWrapper([options.gi_entry], db=options.dbf,
+                                  outfile=outputentryfa)
+        blastqueryfile = outputentryfa
+    elif options.fasta_query:
+        blastqueryfile = options.fasta_query
     
-    blaster = BlastAllWrapper(outputentryfa, outputblast,
+    blaster = BlastAllWrapper(blastqueryfile, outputblast,
                               flavour=options.blast_flavour,
                               db=options.dbc, gis=True, ncore=options.ncore)
 
@@ -104,35 +127,52 @@ def main():
     print fetcher.cline
     fetcher.run()
     print blaster.cline
-    blaster.run()
+#    blaster.run()
 
     with open(outputblast, 'r') as iff:
         xmlparser = PsiBlastXMLParser(iff)
         xmlparser.parse()
         xmlparser.extractData(fmt='evalue,header', outfile=outputpf)
 
-    results = HeadEvalueDict()
-    nseqs = 0
+        results = HeadEvalueDict()
+        nseqs = 0
 
-    while nseqs < options.num_top_hits:
-        with open(outputpf, 'r') as iff:
-            for line in iff:
-                print line
-                evalue = line.split()[0]
-                header = ' '.join(line.split()[1:])
-                if evalue not in results:
-                    results[evalue] = [header]
-                else:
-                    results[evalue].append(header)
-        nseqs = len(results.reverse)
+    with open(outputpf, 'r') as iff:
+        for line in iff:
+            evalue = line.split()[0]
+            header = ' '.join(line.split()[1:])
+            if evalue not in results:
+                results[evalue] = [header]
+            else:
+                results[evalue].append(header)
 
-    for k, v in results.items():     
-        if float(k) < 1e-80:
-            print k, v
-        
-    for k, v in results.reverse.items():
-        print k, v
-            
+    topindexes = results.keys()
+    topindexes.sort(lambda e1, e2: cmp(float(e1), float(e2)))
+    
+    topseqs = [(e, results[e]) for e in topindexes[:options.num_top_hits]]
+
+    finaloutput = []
+
+    for eseq in topseqs:
+        for header in eseq[1]:
+            for ikw in includefilters:
+                if ikw in header:
+                    finaloutput.append((eseq[0], header))
+
+    try:
+        if options.outputfile != sys.stdout:
+            off = open(options.outputfile, 'w')
+        else:
+            off = sys.stdout
+        off.write('# '+str(includefilters)+'\n')
+        for oo in finaloutput:
+            off.write(oo[0]+' : '+oo[1]+'\n')
+    except Exception, (e):
+        print e
+    finally:
+        if off == sys.stdout:
+            off.close()
+
 
 if __name__ == '__main__':
     main()
