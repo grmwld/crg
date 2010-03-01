@@ -101,4 +101,7 @@ class P2G_ParserResult(object):
             self.end = info[2]
             if coverage: self.coverage = self._get_coverage(info[0])
             self.sequence = seq
-            
+        def fasta(self):
+            ss = Sequence(self.name + str(self.start) + ' - ' + str(self.end),
+                          self.sequence)
+            return Sequence(ss.header, ss.rawSequence)
