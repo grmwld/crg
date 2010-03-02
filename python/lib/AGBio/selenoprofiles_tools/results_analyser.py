@@ -57,6 +57,7 @@ class GenomeFolderParser(object):
                         'non_std' : self.secis_nonstd,
                         'twil' : self.secis_twil,
                         'bsecis' : self.secis_b}
+        self.p2g = []
 
     def parse(self, doall=False,
               sec=False, cys=False, thr=False, arg=False,
@@ -147,10 +148,14 @@ class GenomeFolderParser(object):
         if p2g:
             for case in self.notempty:
                 for proteink, proteinv in case.items():
-                    for hitk, hitv in protein.items():
-                        p2gfile = [f for f in hitv if f.endswith('.p2g')][0]
+                    for hitk, hitv in proteinv.items():
+                        p2gfile = os.path.join(self.rootdir,
+                                               'output',
+                                               [f for f in hitv \
+                                                if f.endswith('.p2g')][0])
                         p2g_parser = P2G_Parser(p2gfile)
-                        p2g_parser.parse()
+                        self.p2g.append(p2g_parser)
+                        self.p2g[-1].parse()
 
     def isexcluded(self, case):
         ccase = getattr(self, case)
@@ -222,6 +227,7 @@ def main():
     pparser = P2G_Parser(pp)
     pparser.parse()
     print pparser.result
+    pparser.result.target.fasta().prints()
     
 
 

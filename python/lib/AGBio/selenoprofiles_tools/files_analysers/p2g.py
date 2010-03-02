@@ -38,7 +38,7 @@ class P2G_Parser(object):
         else: self.result.stop_codons = output[6][1]
 
     def _parse_exonarate(self):
-        pass
+        sys.stderr.write('not implemented\n')
 
     def _source_prog(self):
         with open(self._filename, 'r') as iff:
