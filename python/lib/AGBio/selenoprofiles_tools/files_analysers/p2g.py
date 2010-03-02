@@ -28,7 +28,7 @@ class P2G_Parser(object):
                                 stdout=subprocess.PIPE,
                                 shell=True)
         op = proc.communicate()[0]
-        output = [c.split() for c in op.split(';')]
+        output = [o.strip() for o in op.split(';')][:-1]
         self._fill_info(output)
 
     def _parse_exonarate(self):
@@ -37,23 +37,19 @@ class P2G_Parser(object):
                                 stdout=subprocess.PIPE,
                                 shell=True)
         op = proc.communicate()[0]
-        output = [c.split() for c in op.split(';')]
+        output = [o.strip() for o in op.split(';')][:-1]
         self._fill_info(output)
 
     def _fill_info(self, info):
-        try:
-            self.result.query.parse(info[0], info[5][1].strip(','), coverage=True)
-            self.result.target.parse(info[1], info[5][2].strip(','))
-            self.result.frameshifts = info[2][1]
-            self.result.orig_pos = info[3]
-            self.result.score = info[4][1]
-            if len(info[6]) == 1:
-                self.result.stop_codons = 0
-            else: self.result.stop_codons = info[6][1]
-        except IndexError:
-            print traceback.print_exc()
-            print info
-            sys.exit(-1)
+        self.result.query.parse(info[0],
+                                info[5].split(':')[1].split(',')[0].strip(),
+                                coverage=True)
+        self.result.target.parse(info[1],
+                                 info[5].split(':')[1].split(',')[1].strip())
+        self.result.frameshifts = info[2].split(':')[1].strip()
+        self.result.orig_pos = info[3].split()
+        self.result.score = info[4].split(':')[1].strip()
+        self.result.stop_codons = info[6].split(':')[1]
 
     def _source_prog(self):
         with open(self._filename, 'r') as iff:
@@ -111,10 +107,11 @@ class P2G_ParserResult(object):
                 ori_length = float(len(tmp_seq[0].sequence))
             return local_length / ori_length
         def parse(self, info, seq, coverage=False):
-            self.name = info[0]
-            self.start = info[1]
-            self.end = info[2]
-            if coverage: self.coverage = self._get_coverage(info[0])
+            self.name, self.start, self.end = info.split()
+##             self.name = info[0]
+##             self.start = info[1]
+##             self.end = info[2]
+            if coverage: self.coverage = self._get_coverage(self.name)
             self.sequence = seq
         def fasta(self):
             ss = Sequence(self.name + str(self.start) + ' - ' + str(self.end),
