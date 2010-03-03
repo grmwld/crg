@@ -6,6 +6,7 @@ import sys
 import os
 import optparse
 import shutil
+import logging
 from cStringIO import StringIO
 sys.path.append('/users/rg/agrimaldi/Code/python/python/lib/')
 from AGBio.ncbi.BlastWrappers import *
@@ -22,15 +23,11 @@ class HeadEvalueDict(BiDict):
         def fget(self):
             output = {}
             for key, value in self.items():
-                try:
-                    for v in value:
-                        if v not in output:
-                            output[v] = key
-                        else:
-                            output[v] = min(float(key), float(output[v]))
-                except TypeError:
-                    print v, key
-                    sys.exit('beuh')
+                for v in value:
+                    if v not in output:
+                        output[v] = key
+                    else:
+                        output[v] = min(float(key), float(output[v]))
             return output
         return locals()
 
@@ -93,6 +90,10 @@ def main():
                       help='location of the file containing filters.',
                       metavar='FILE')
 
+    parser.add_option('-v', '--verbosity',
+                      dest='verbosity', action='count',
+                      help='set verbosity level')
+
     parser.add_option('-T', '--temp',
                       dest='temp',
                       help='temporary folder.',
@@ -105,17 +106,34 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    outputentryfa = os.path.join(options.temp, options.gi_entry + '.fa')
-    outputblast = os.path.join(options.temp, options.gi_entry + '.xml')
-    outputpf = os.path.join(options.temp, options.gi_entry + '.index')
+    log_level = logging.WARNING
+    if options.verbosity == 1:
+        log_level = logging.INFO
+    elif options.verbosity >= 2:
+        log_level = logging.DEBUG
+    logging.basicConfig(level=log_level,
+                        format='%(levelname)-6s:%(filename)s  %(message)s')
 
-    includefilters = parsefilters(options.filters_file)
+    if options.filters_file:
+        includefilters = parsefilters(options.filters_file)
+    else:
+        includefilters = None
+    logging.info('Filters : '+str(includefilters))
 
     if options.gi_entry:
+        outputentryfa = os.path.join(options.temp, options.gi_entry + '.fa')
+        outputblast = os.path.join(options.temp, options.gi_entry + '.xml')
+        outputpf = os.path.join(options.temp, options.gi_entry + '.index')
         fetcher = FastaCmdWrapper([options.gi_entry], db=options.dbf,
                                   outfile=outputentryfa)
         blastqueryfile = outputentryfa
     elif options.fasta_query:
+        outputblast = os.path.join(options.temp,
+                                   os.path.basename(options.fasta_query) \
+                                   + '.xml')
+        outputpf = os.path.join(options.temp,
+                                os.path.basename(options.fasta_query) \
+                                + '.index')
         blastqueryfile = options.fasta_query
     
     blaster = BlastAllWrapper(blastqueryfile, outputblast,
@@ -124,18 +142,19 @@ def main():
 
     xmlparser = PsiBlastXMLParser(outputblast)
 
-    print fetcher.cline
-    fetcher.run()
-    print blaster.cline
-#    blaster.run()
+    if options.gi_entry:
+        logging.info(' '+fetcher.cline)
+        fetcher.run()
+    logging.info('Running blast : '+blaster.cline)
+    blaster.run()
 
     with open(outputblast, 'r') as iff:
+        logging.info('Parsing the xml output -> '+outputpf)
         xmlparser = PsiBlastXMLParser(iff)
         xmlparser.parse()
         xmlparser.extractData(fmt='evalue,header', outfile=outputpf)
 
-        results = HeadEvalueDict()
-        nseqs = 0
+    results = HeadEvalueDict()
 
     with open(outputpf, 'r') as iff:
         for line in iff:
@@ -155,10 +174,13 @@ def main():
 
     for eseq in topseqs:
         for header in eseq[1]:
-            for ikw in includefilters:
-                if ikw in header:
-                    finaloutput.append((eseq[0], header))
-
+            if options.filters_file:
+                for ikw in includefilters:
+                    if ikw in header:
+                        finaloutput.append((eseq[0], header))
+            else:
+                finaloutput.append((eseq[0], header))
+    logging.debug(str(finaloutput))
     try:
         if options.outputfile != sys.stdout:
             off = open(options.outputfile, 'w')
