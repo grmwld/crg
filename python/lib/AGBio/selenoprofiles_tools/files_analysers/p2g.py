@@ -108,9 +108,6 @@ class P2G_ParserResult(object):
             return local_length / ori_length
         def parse(self, info, seq, coverage=False):
             self.name, self.start, self.end = info.split()
-##             self.name = info[0]
-##             self.start = info[1]
-##             self.end = info[2]
             if coverage: self.coverage = self._get_coverage(self.name)
             self.sequence = seq
         def fasta(self):

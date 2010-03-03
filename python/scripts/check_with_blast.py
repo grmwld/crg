@@ -152,7 +152,7 @@ def main():
     xmlparser = PsiBlastXMLParser(outputblast)
 
     if options.gi_entry:
-        logging.info(' '+fetcher.cline)
+        logging.info('Fetching the sequence from local database : '+fetcher.cline)
         fetcher.run()
     logging.info('Running blast : '+blaster.cline)
     blaster.run()
