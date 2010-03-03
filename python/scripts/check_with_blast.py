@@ -43,10 +43,34 @@ def main():
 
     parser = optparse.OptionParser()
 
-    parser.add_option('-s', '--entry',
-                      dest='gi_entry',
-                      help='GI to check against the database',
-                      metavar='GI')
+    fetchgroup = optparse.OptionGroup(parser, 'Options to work with a GI')
+    blastgroup = optparse.OptionGroup(parser, 'Blast related options')
+
+    fetchgroup.add_option('-s', '--entry',
+                          dest='gi_entry',
+                          help='GI to check against the database',
+                          metavar='GI')
+
+    fetchgroup.add_option('-D', '--database_fetch',
+                          dest='dbf',
+                          help='location of the database that should be used for fetching the sequence from the gi provided.',
+                          metavar='DB')
+
+    blastgroup.add_option('-b', '--blast_flavour',
+                      dest='blast_flavour',
+                      help='what kind of blast should be performed ?',
+                      metavar='BLAST')
+
+    blastgroup.add_option('-d', '--database_check',
+                          dest='dbc',
+                          help='location of the database that should be used for checking.',
+                          metavar='DB')
+
+    blastgroup.add_option('-a', '--ncore',
+                          dest='ncore',
+                          type='int',
+                          help='number of cores to use for the blast.',
+                          metavar='INT')
 
     parser.add_option('-q', '--query',
                       dest='fasta_query',
@@ -57,27 +81,6 @@ def main():
                       dest='outputfile',
                       help='name of the output file. default is stdout',
                       metavar='FILE')
-
-    parser.add_option('-b', '--blast_flavour',
-                      dest='blast_flavour',
-                      help='what kind of blast should be performed ?',
-                      metavar='BLAST')
-
-    parser.add_option('-d', '--database_check',
-                      dest='dbc',
-                      help='location of the database that should be used for checking.',
-                      metavar='DB')
-    
-    parser.add_option('-D', '--database_fetch',
-                      dest='dbf',
-                      help='location of the database that should be used for fetching the sequence from the gi provided.',
-                      metavar='DB')
-
-    parser.add_option('-a', '--ncore',
-                      dest='ncore',
-                      type='int',
-                      help='number of cores to use for the blast.',
-                      metavar='INT')
 
     parser.add_option('-n', '--num_top_hits',
                       dest='num_top_hits',
@@ -99,12 +102,18 @@ def main():
                       help='temporary folder.',
                       metavar='DIR')
 
+    parser.add_option_group(fetchgroup)
+    parser.add_option_group(blastgroup)
+
     parser.set_defaults(temp = '/tmp/',
                         ncore = 1,
                         num_top_hits = 1,
                         outputfile = sys.stdout)
 
     (options, args) = parser.parse_args()
+
+    if len(sys.argv) == 1:
+        parser.error('No options specified. check_with_blast.py --help for details.')
 
     log_level = logging.WARNING
     if options.verbosity == 1:
