@@ -15,40 +15,35 @@ from AGBio.io.common import *
 from AGBio.Utilities import *
 from AGBio.selenoprofiles_tools.results_analyser import *
 from AGBio.selenoprofiles_tools.files_analysers.p2g import *
+from AGBio.selenoprofiles_tools.files_analysers.ali import *
 
-def check_with_blast(organisms_folders=None, temp=None):
-    try:
-        tmp_run_folder = FolderWrapper(genTempfilename(temp, 'check_'))
-        logging.debug('Creating run folder : '+tmp_run_folder.abspath)
-        tmp_run_folder.create()
-        for f in organisms_folders:
-            tmp_org_folder = tmp_run_folder.sub_folder(os.path.basename(f))
-            logging.debug('Creating organism folder : '+tmp_org_folder.abspath)
-            tmp_org_folder.create()
-            sp_parser = GenomeFolderParser(f)
-            sp_parser.parse(sec=True, cys=True, thr=True, arg=True, uga=True)
-            sp_parser.parseResultFiles(p2g=True, bsecisearch=False)
-            for p2g in sp_parser.p2g:
-                tmp_query_file = tmp_org_folder.sub_file()
-                logging.debug('Creating query file : '+tmp_query_file.abspath)
-                tmp_query_file.create()
-                logging.info(p2g.filename)
-#                logging.verbose1(p2g.result.target.fasta())
-                with open(tmp_query_file.abspath, 'w') as off:
-                    p2g.result.target.fasta().prints(off)
-                cmd = ' '.join(['check_with_blast.py', '-v',
-                                '-q', tmp_query_file.abspath,
-                                '-b', 'blastp',
-                                '-d', '/seq/databases/nr_uncompressed/nr',
-                                '-a', '4',
-                                '-n', '10',
-                                '-T', temp])
-                subprocess.call(cmd, shell=True)
-    except Exception:
-        print traceback.print_exc()
-    finally:
-        logging.info('Cleaning temporary files'.rjust(10))
-        tmp_run_folder.delete(recursive=True)
+
+def check_with_blast(sp_parser=None, org_folder=None, temp=None):
+    sp_parser = sp_parser
+    sp_parser.parse_p2gs()
+    for p2g in sp_parser.p2g:
+        query_file = org_folder.sub_file(genTempfilename(prefix=''))
+        logging.debug('Creating query file : '+query_file.abspath)
+        query_file.create()
+        logging.info(p2g.filename)
+        ##logging.verbose1(p2g.result.target.fasta())
+        with open(query_file.abspath, 'w') as off:
+            p2g.result.target.fasta().prints(off)
+        cmd = ' '.join(['check_with_blast.py', '-v',
+                        '-q', query_file.abspath,
+                        '-b', 'blastp',
+                        '-d', '/seq/databases/nr_uncompressed/nr',
+                        '-a', '4',
+                        '-n', '10',
+                        '-T', org_folder.abspath])
+        subprocess.call(cmd, shell=True)
+
+def compute_u_stats(sp_parser=None):
+    sp_parser = sp_parser
+    sp_parser.ali_stats()
+    for ali in sp_parser.ali:
+        logging.info('Stats for file : '+ali.filename)
+        ali.u_redundant.prints('U')
 
 def main():
 
@@ -62,7 +57,12 @@ def main():
     parser.add_option('-c', '--check_with_blast',
                       action='store_true', default=False,
                       dest='check_with_blast',
-                      help='chack candidates with blast')
+                      help='check candidates with blast')
+
+    parser.add_option('-u', '--u_stats',
+                      action='store_true',
+                      dest='u_stats',
+                      help='Generate statistics about U dispertion')
 
     parser.add_option('-o', '--output',
                       dest='outputfile',
@@ -103,8 +103,21 @@ def main():
     organisms_folders = [os.path.join(options.sp_folder, f) \
                          for f in os.listdir(options.sp_folder)]
 
-    if options.check_with_blast:
-        check_with_blast(organisms_folders, options.temp)
+    tmp_run_folder = FolderWrapper(genTempfilename(options.temp, 'check_'))
+    logging.debug('Creating run folder : '+tmp_run_folder.abspath)
+    tmp_run_folder.create()
+    for f in organisms_folders:
+        tmp_org_folder = tmp_run_folder.sub_folder(os.path.basename(f))
+        logging.debug('Creating organism folder : '+tmp_org_folder.abspath)
+        tmp_org_folder.create()
+        sp_parser = GenomeFolderParser(f)
+        sp_parser.parse(sec=True, cys=True, thr=True, arg=True, uga=True)
+        
+        if options.check_with_blast:
+            check_with_blast(sp_parser, tmp_org_folder)
+        if options.u_stats:
+            logging.info('Computing statistics on '+sp_parser.rootdir)
+            compute_u_stats(sp_parser)
     
 if __name__ == '__main__':
     main()

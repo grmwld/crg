@@ -9,17 +9,34 @@ from AGBio.Utilities import *
 from AGBio.io.Fasta import *
 
 
+class AliStat(dict):
+    def __init__(self, other=None):
+        dict.__init__(self, other)
+
+    def prints(self, aminoacid, out=sys.stdout):
+        for pos in self[aminoacid]:
+            out.write(str(pos) + ' ')
+            for aa in self:
+                try:
+                    out.write(str(aa)+':')
+                    out.write(str(len(self[aa][pos])) + ';')
+                except KeyError:
+                    out.write('0;')
+            out.write('\n')
+
+
 class AliData(object):
     def __init__(self, filename=None):
         self.filename = filename
         self.ali = None
         self.u_redundant = None
         self.u_non_redundant = None
+        self.load_alignment(self.filename)
 
     def load_alignment(self, filename=None):
         if not filename:
             if not self.filename:
-                raise ValueError, 'Unspecified filename'
+                return
             else:
                 fname = self.filename
         else:
@@ -27,43 +44,10 @@ class AliData(object):
         with open(fname, 'r') as iff:
             self.ali = Alignment(loadSequences(iff))
 
-    def find_u_positions(self):
+    def find_x_positions(self, aas='UC-*'):
         if not self.ali:
             raise ValueError, 'No suitable alignment found'
-        self.u_redundant = self.ali.findPositions(('U', 'C', '-'), True)
-        self.u_non_redundant = self.ali.findPositions(('U', 'C', '-'), False)
-
-    def print_stat(self, redundant):
-        if redundant:
-            self._print_u_redundant()
-        else:
-            self._print_u_non_redundant()
-
-    def scatter_score(self, stats):
-        pass
-
-    def _print_u_redundant(self):
-        '''Prints stats of redundant positions
-        '''
-        for i in self.u_redundant['U']:
-            sys.stdout.write(str(i) + ' ')
-            for j in self.u_redundant:
-                try:
-                    sys.stdout.write(str(j)+': ')
-                    sys.stdout.write(str(len(self.u_redundant[j][i])) + ' ; ')
-                except KeyError:
-                    sys.stdout.write('0 ; ')
-            sys.stdout.write('\n')
-
-    def _print_u_non_redundant(self):
-        '''Prints stats of non redundant positions
-        '''
-        for i in self.u_non_redundant['U']:
-            sys.stdout.write(str(i) + ' ')
-            for j in self.u_non_redundant:
-                try:
-                    sys.stdout.write(str(j)+': ')
-                    sys.stdout.write(str(len(self.u_non_redundant[j][i])) + ' ; ')
-                except KeyError:
-                    sys.stdout.write('0 ; ')
-            sys.stdout.write('\n')
+        self.u_redundant = AliStat(self.ali.findPositions(aas,
+                                                          True))
+        self.u_non_redundant = AliStat(self.ali.findPositions(aas,
+                                                              False))
