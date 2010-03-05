@@ -26,9 +26,24 @@ def check_with_blast(sp_parser=None, org_folder=None, temp=None):
         query_file = org_folder.sub_file(genTempfilename(prefix=''))
         logging.info('Creating query file : '+query_file.abspath)
         query_file.create()
-        output_file = org_folder.sub_file(p2g.filename)
-        print output_file, output_file.abspath
-        raw_input()
+        try:
+            tmp_prot_name = '.'.join(os.path.basename(p2g.filename).split('.')[:-3])
+            tmp_prot_folder = org_folder.sub_folder('.'.join([tmp_prot_name, 'rad']))
+            logging.info('Creating temporary protein folder : ' \
+                         +tmp_prot_folder.abspath)
+            tmp_prot_folder.create()
+        except OSError, (e):
+            if e.errno == 17:
+                pass
+        try:
+            tmp_checked_folder = tmp_prot_folder.sub_folder('checked_w_blast.d')
+            logging.info('Creating temporary blast_check folder : ' \
+                         +tmp_checked_folder.abspath)
+            tmp_checked_folder.create()
+        except OSError, (e):
+            if e.errno == 17:
+                pass
+        output_file = tmp_checked_folder.sub_file('.'.join([os.path.basename(p2g.filename), 'cb']))
         with open(query_file.abspath, 'w') as off:
             p2g.result.target.fasta().prints(off)
         cmd = ' '.join(['check_with_blast.py', '-v',
@@ -36,10 +51,13 @@ def check_with_blast(sp_parser=None, org_folder=None, temp=None):
                         '-q', query_file.abspath,
                         '-b', 'blastp',
                         '-d', '/seq/databases/nr_uncompressed/nr',
-                        '-a', '4',
+                        '-a', '2',
                         '-n', '10',
                         '-T', org_folder.abspath])
         subprocess.call(cmd, shell=True)
+        with open(output_file.abspath, 'r') as iff:
+            for line in iff:
+                logging.info(line.strip())
 
 def compute_u_stats(sp_parser=None, org_folder=None):
     sp_parser = sp_parser
