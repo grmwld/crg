@@ -169,8 +169,9 @@ class GenomeFolderParser(object):
                                        'output',
                                        '.'.join([protname, 'ali']))
                 alignment = AliData(alifile)
-                self.ali.append(alignment)
-                self.ali[-1].find_x_positions()
+                if alignment.filename not in [s.filename for s in self.ali]:
+                    self.ali.append(alignment)
+                    self.ali[-1].find_x_positions()
 
     def isexcluded(self, case):
         ccase = getattr(self, case)
