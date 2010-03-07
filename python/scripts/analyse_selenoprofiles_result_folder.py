@@ -57,7 +57,7 @@ def check_with_blast(sp_parser=None, org_folder=None, temp=None):
         subprocess.call(cmd, shell=True)
         with open(output_file.abspath, 'r') as iff:
             for line in iff:
-                logging.info(line.strip())
+                logging.debug(line.strip())
 
 def compute_u_stats(sp_parser=None, org_folder=None):
     sp_parser = sp_parser
@@ -80,7 +80,7 @@ def compute_u_stats(sp_parser=None, org_folder=None):
             ali.u_redundant.prints('U', off)
             off.seek(0)
             for line in off:
-                logging.info(line.strip())
+                logging.debug(line.strip())
 
 def write_to_result_folder():
     pass
