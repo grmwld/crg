@@ -115,6 +115,7 @@ class GenomeFolderParser(object):
                                        self.arg,
                                        self.uga,
                                        self.ual,
+                                       self.hom,
                                        self.secis_b] if pp]
 
 
