@@ -164,7 +164,7 @@ def main():
             tmp_org_folder.create()
             sp_parser = GenomeFolderParser(f)
             sp_parser.parse(sec=True, cys=True, thr=True,
-                            arg=True, uga=True)
+                            arg=True, uga=True, hom=True)
             if options.check_with_blast:
                 check_with_blast(sp_parser, tmp_org_folder)
             if options.u_stats:
