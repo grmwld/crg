@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import cStringIO
+import traceback
 sys.path.append('/users/rg/mmariotti/libraries')
 from MMlib import bbash
 from AGBio.io.common import *
@@ -17,31 +18,41 @@ class P2G_Parser(object):
     according to where it comes from (genewise or exonerate).
     '''
     def __init__(self, filename):
-        self._filename = filename
+        self.filename = filename
         self.parse = self._source_prog()
         self.result = P2G_ParserResult()
 
     def _parse_genewise(self):
-        #proc = subprocess.Popen(['parse_genewise.py', '-i', self._filename],
-        #                        stdout=subprocess.PIPE,
-        #                        shell=True)
-        op = bbash(' '.join(['parse_genewise.py', '-i', self._filename]), True)
-        #raw_input()
-        output = [c.split() for c in op.split(';')]
-        self.result.query.parse(output[0], output[5][1].strip(','), coverage=True)
-        self.result.target.parse(output[1], output[5][2].strip(','))
-        self.result.frameshifts = output[2][1]
-        self.result.orig_pos = output[3]
-        self.result.score = output[4][1]
-        if len(output[6]) == 1:
-            self.result.stop_codons = 0
-        else: self.result.stop_codons = output[6][1]
+        proc = subprocess.Popen(' '.join(['parse_genewise.py',
+                                          '-i', self.filename]),
+                                stdout=subprocess.PIPE,
+                                shell=True)
+        op = proc.communicate()[0]
+        output = [o.strip() for o in op.split(';')][:-1]
+        self._fill_info(output)
 
     def _parse_exonarate(self):
-        pass
+        proc = subprocess.Popen(' '.join(['parse_exonerate.py',
+                                          '-i', self.filename]),
+                                stdout=subprocess.PIPE,
+                                shell=True)
+        op = proc.communicate()[0]
+        output = [o.strip() for o in op.split(';')][:-1]
+        self._fill_info(output)
+
+    def _fill_info(self, info):
+        self.result.query.parse(info[0],
+                                info[5].split(':')[1].split(',')[0].strip(),
+                                coverage=True)
+        self.result.target.parse(info[1],
+                                 info[5].split(':')[1].split(',')[1].strip())
+        self.result.frameshifts = info[2].split(':')[1].strip()
+        self.result.orig_pos = info[3].split()
+        self.result.score = info[4].split(':')[1].strip()
+        self.result.stop_codons = info[6].split(':')[1]
 
     def _source_prog(self):
-        with open(self._filename, 'r') as iff:
+        with open(self.filename, 'r') as iff:
             for line in iff:
                 if line.strip().startswith('genewise output'):
                      return self._parse_genewise
@@ -96,12 +107,14 @@ class P2G_ParserResult(object):
                 ori_length = float(len(tmp_seq[0].sequence))
             return local_length / ori_length
         def parse(self, info, seq, coverage=False):
-            self.name = info[0]
-            self.start = info[1]
-            self.end = info[2]
-            if coverage: self.coverage = self._get_coverage(info[0])
+            self.name, self.start, self.end = info.split()
+            if coverage: self.coverage = self._get_coverage(self.name)
             self.sequence = seq
         def fasta(self):
-            ss = Sequence(self.name + str(self.start) + ' - ' + str(self.end),
+            header = ''
+            if self.name[0] != '>':
+                header += '>'
+            header += ''.join([self.name, str(self.start), '-', str(self.end)])
+            ss = Sequence(header,
                           self.sequence)
             return Sequence(ss.header, ss.rawSequence)

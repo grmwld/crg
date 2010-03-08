@@ -5,6 +5,7 @@ from __future__ import with_statement
 import os
 import sys
 import shutil
+from AGBio.Utilities import *
 
 class BaseFileWrapper(object):
     '''Wrapper for a file.
@@ -53,19 +54,35 @@ class FileWrapper(BaseFileWrapper, Openable, Closable):
     def __init__(self, name):
         BaseFileWrapper.__init__(self, name)
 
+    def create(self):
+        with open(self.abspath, 'w'):
+            pass
+
+    def delete(self):
+        os.remove(self.abspath)
+
 
 class FolderWrapper(BaseFileWrapper, Container):
     def __init__(self, name):
         BaseFileWrapper.__init__(self, name)
 
-    def create_file(self, name):
-        with open(name, 'w') as mkf:
-            pass
-        return FileWrapper(name)
+    def create(self):
+        os.mkdir(self.abspath)
 
-    def create_folder(self, name):
-        os.mkdir(name)
-        return FolderWrapper(name)
+    def delete(self, recursive=False):
+        if recursive:
+            shutil.rmtree(self.abspath)
+        else:
+            os.rmdir(self.abspath)
+
+    def sub_file(self, name=None):
+        if name:
+            return FileWrapper(os.path.join(self.abspath, name))
+        else:
+            return FileWrapper(genTempfilename(self.abspath))
+
+    def sub_folder(self, name):
+        return FolderWrapper(os.path.join(self.abspath, name))
 
 
 def writeline(outf, line=''):

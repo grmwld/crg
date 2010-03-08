@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
+import subprocess
 
 TEMP = '/home/agrimaldi/temp/'
 SBIN = '/soft/bin/'
@@ -58,7 +60,7 @@ class BaseUtilityWrapper(dict):
     def run(self):
         '''Runs the commandline built with the various options.
         '''
-        os.system(self.cline)
+        subprocess.call(self.cline, shell=True)
 
         
 class HasInFile(dict):

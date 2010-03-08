@@ -177,10 +177,10 @@ class Alignment(SequenceList):
                         if pos == p:
                             foundany = True
                             try:
-                                if tuple([i]) in output[p]:
-                                    output[p][tuple([i])].append(seq)
+                                if i in output[p]:
+                                    output[p][i].append(seq)
                                 else:
-                                    output[p][tuple([i])] = [seq]
+                                    output[p][i] = [seq]
                             except TypeError:
                                 print pos, p, i, output[p]
                     if not foundany:
@@ -316,39 +316,4 @@ def replacePattern( sequence, pattern, replacement ):
 
 
 if __name__ == '__main__':
-
-#    with open('/users/rg/mmariotti/dio_filtered_no_peroxid_no_PrxU.no_DI1_vars.fasta', 'r') as ff:
-#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test_mafft.fasta', 'r') as ff:
-#    with open('/users/rg/agrimaldi/Data/gos/selenoprofiles_profiles/dio_like.det.fasta', 'r') as ff:
-#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.profile.aligned.fasta', 'r') as ff:
-#    with open('/users/rg/agrimaldi/Data/gos/test/dio_like_test.det.fasta', 'r') as ff:
-    with open('/users/rg/agrimaldi/Data/gos/full/selw_like.selenoprofiles.prep/selw_like_manfiltered.1_tcoffee.fasta', 'r') as ff:
-        aa = loadSequences(ff)
-    ss = Alignment(aa)
-    uu = ss.findPositions(('U','C','-'), True)
-    print len(ss)
-    oo = ss.purgeFromFalseX(0.4, 5, 'U', 'C', '-')
-    print len(ss), len(oo)
-
-    uu = oo.findPositions(('U','C','-'), True)
-
-    count = 0
-    for i in uu:
-        for j in uu[i]:
-            if len(uu[i][j]) > 500:
-                print i, j, len(uu[i][j])
-            count += len(uu[i][j])
-    
-    print count, len(ss)
-
-    for i in uu['U']:
-        sys.stdout.write(str(i) + ' ')
-        for j in uu:
-            try:
-                sys.stdout.write(str(j)+': ')
-                sys.stdout.write(str(len(uu[j][i])) + ' ; ')
-            except KeyError:
-                sys.stdout.write('0 ; ')
-        sys.stdout.write('\n')
-        
-##     print len(uu['U'][(1687,)]), len(uu['C'][(1687,)]), len(uu['-'][(1687,)])
+    pass
