@@ -78,9 +78,20 @@ def main():
                          qparam = 'mem_4',
                          jobsfolder = os.getcwd(),
                          sppath = '/users/rg/mmariotti/Scripts/selenoprofiles.py',
-                         sp_args = '-S')
+                         sp_args = '-S',
+                         profileslist = None,
+                         profilesfolder = None)
 
     (options, args) = parser.parse_args()
+
+    opt_profileslist = ''
+    opt_profilesfolder = ''
+    if options.profileslist:
+        opt_profileslist = ' '.join(['-i',
+                                     os.path.abspath(options.profileslist)])
+    if options.profilesfolder:
+        opt_profilesfolder = ' '.join(['-profiles',
+                                       os.path.abspath(options.profilesfolder)])
 
     if not os.path.isdir(options.outputfolder):
         os.makedirs(options.outputfolder)
@@ -115,10 +126,11 @@ def main():
                                  ' '.join(options.sp_args.split(',')),
                                  '-genomes_folder', os.path.abspath(options.genomesfolder),
                                  '-genome', genome,
-                                 '-profiles', os.path.abspath(options.profilesfolder),
-                                 '-i', os.path.abspath(options.profileslist),
+                                 opt_profilesfolder, opt_profileslist,
                                  '-temp', tmpfold,
-                                 '&>', os.path.join(logs_dir, genome + '.out.log') + '\n')))
+                                 '>>', os.path.join(logs_dir, genome + '.out.log'),
+                                 '2>>', os.path.join(logs_dir, genome + '.err.log'),
+                                 '\n')))
             tjf.write('rm -r ' + tmpfold + '\n')
 
 if __name__ == '__main__':
