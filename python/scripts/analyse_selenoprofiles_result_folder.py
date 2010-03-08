@@ -114,6 +114,11 @@ def main():
                       help='temporary folder',
                       metavar='DIR')
 
+    parser.add_option('-t', '--temp_run',
+                      dest='temp_run',
+                      help='temporary run folder in case the previous one crashed and you one to continue in that same run folder.',
+                      metavar='DIR')
+
     parser.add_option('-v', '--verbosity',
                       dest='verbosity', action='count',
                       help='set verbosity level')

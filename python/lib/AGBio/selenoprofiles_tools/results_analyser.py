@@ -44,6 +44,7 @@ class GenomeFolderParser(object):
         self.arg = {}
         self.uga = {}
         self.ual = {}
+        self.hom = {}
         self.secis_std = {}
         self.secis_nonstd = {}
         self.secis_twil = {}
@@ -57,14 +58,15 @@ class GenomeFolderParser(object):
                         'std' : self.secis_std,
                         'non_std' : self.secis_nonstd,
                         'twil' : self.secis_twil,
-                        'bsecis' : self.secis_b}
+                        'bsecis' : self.secis_b,
+                        'homologue' : self.hom}
         self.p2g = []
         self.ali = []
 
     def parse(self, doall=False,
               sec=False, cys=False, thr=False, arg=False,
-              uga=False, ual=False, bsecis=False,
-              stdsecis=False, nonstdsecis=False, twilsecis='False'):
+              uga=False, ual=False, hom=False, bsecis=False,
+              stdsecis=False, nonstdsecis=False, twilsecis=False):
         '''Method to parse the folder.
 
         The wanted informations are given as arguments. If `doall` is set to
@@ -78,6 +80,7 @@ class GenomeFolderParser(object):
         - `arg`: check for arginine containing candidates.
         - `uga`: check for UGA containing candidates.
         - `ual`: check for unaligned candidates.
+        - `hom`: check for homologues candidates.
         - `stdsecis`: check for standard SECIS containing candidates.
         - `nonstdsecis`: check for non-std SECIS containing candidates.
         - `twilsecis`: check for twilight SECIS containing candidates.
@@ -92,6 +95,7 @@ class GenomeFolderParser(object):
             if thr: lukw.append('threonine')
             if arg: lukw.append('arginine')
             if uga: lukw.append('uga_containing')
+            if hom: lukw.append('homologue')
             if ual: lukw.append('unaligned')
             if stdsecis : lukw.append('std')
             if nonstdsecis : lukw.append('non_std')
