@@ -119,12 +119,18 @@ def main():
                       help='temporary run folder in case the previous one crashed and you one to continue in that same run folder.',
                       metavar='DIR')
 
+    parser.add_option('-L', '--log',
+                      dest='log_file',
+                      help='Destination of the logging output.',
+                      metavar='FILE')
+
     parser.add_option('-v', '--verbosity',
                       dest='verbosity', action='count',
                       help='set verbosity level')
 
     parser.set_defaults(outputfile = sys.stdout,
-                        temp = '/tmp/')
+                        temp = '/tmp/',
+                        log_file = None)
 
     (options, args) = parser.parse_args()
 
@@ -134,7 +140,13 @@ def main():
     elif options.verbosity >= 2:
         log_level = logging.DEBUG
     log_format = '%(levelname)-7s%(asctime)s  %(filename)s  %(message)s'
-    logging.basicConfig(level=log_level, format=log_format)
+    if options.log_file:
+        logging.basicConfig(filename=options.log_file,
+                            level=log_level,
+                            format=log_format)
+    else:
+        logging.basicConfig(level=log_level,
+                            format=log_format)
 
     organisms_folders = [os.path.join(options.sp_folder, f) \
                          for f in os.listdir(options.sp_folder)]
