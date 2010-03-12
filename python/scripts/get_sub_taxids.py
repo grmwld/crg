@@ -27,18 +27,19 @@ def load_nodes(nodes):
 ##             pc_dict[couple[1]] = [couple[0]]
 ##     return pc_dict
 
-def get_sub_taxids(tree, taxid, subs=[]):
+def get_sub_taxids(tree, taxid, subs=[], only_leaves=False):
     lsubs = subs
     try:
         for c in tree[taxid]:
-            lsubs.append(get_sub_taxids(tree, c, lsubs))
-        lsubs.append(taxid)
+            lsubs.append(get_sub_taxids(tree, c, lsubs, only_leaves))
+        if not only_leaves:
+            lsubs.append(taxid)
     except KeyError, (e):
         return taxid
     for i in lsubs:
         if type(i) != type(''):
             lsubs.remove(i)
-    return lsubs
+    return lsub
 
 
 def main():
@@ -50,6 +51,10 @@ def main():
                       help='taxid from wich all children nodes or parents nodes should be returned',
                       metavar='ID',
                       type='int')
+
+    parser.add_option('-l', '--only_leaves',
+                      dest='only_leaves', action='store_true', default=False,
+                      help='only return those children nodes that are leaves')
 
     parser.add_option('-n', '--nodes_file',
                       dest='nodes_file',
@@ -65,7 +70,8 @@ def main():
 
     tree = load_nodes(opt.nodes_file)
 
-    sub_nodes = get_sub_taxids(tree, str(opt.taxid))
+    sub_nodes = get_sub_taxids(tree, str(opt.taxid),
+                               only_leaves=opt.only_leaves)
     
     for i in sub_nodes:
         sys.stdout.write(i+'\n')
