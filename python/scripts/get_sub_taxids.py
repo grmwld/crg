@@ -18,28 +18,23 @@ def load_nodes(nodes):
                 data[p] = [c]
     return data
 
-## def get_tree(cp_couples):
-##     pc_dict = {}
-##     for couple in cp_couples:
-##         if couple[1] in pc_dict:
-##             pc_dict[couple[1]].append(couple[0])
-##         else:
-##             pc_dict[couple[1]] = [couple[0]]
-##     return pc_dict
+def get_sub_taxids(tree, taxid, only_leaves=False):
+    tmp = _get_sub_taxids(tree, taxid, only_leaves=False)
+    for i in tmp:
+        if type(i) != type(''):
+            tmp.remove(i)
+    return tmp
 
-def get_sub_taxids(tree, taxid, subs=[], only_leaves=False):
+def _get_sub_taxids(tree, taxid, subs=[], only_leaves=False):
     lsubs = subs
     try:
         for c in tree[taxid]:
-            lsubs.append(get_sub_taxids(tree, c, lsubs, only_leaves))
+            lsubs.append(_get_sub_taxids(tree, c, lsubs, only_leaves))
         if not only_leaves:
             lsubs.append(taxid)
     except KeyError, (e):
         return taxid
-    for i in lsubs:
-        if type(i) != type(''):
-            lsubs.remove(i)
-    return lsub
+    return lsubs
 
 
 def main():
