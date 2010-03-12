@@ -19,22 +19,32 @@ def load_nodes(nodes):
     return data
 
 def get_sub_taxids(tree, taxid, only_leaves=False):
-    tmp = _get_sub_taxids(tree, taxid, only_leaves=False)
-    for i in tmp:
-        if type(i) != type(''):
-            tmp.remove(i)
+    '''Get children taxids in a recursive manner.
+    '''
+    def _do_leaves(tree, taxid, subs=set()):
+        '''Get children leaves taxids in a recursive manner
+        '''
+        lsubs = subs
+        try:
+            for c in tree[taxid]:
+                lsubs.update(_do_leaves(tree, c, lsubs))
+        except KeyError, (e):
+            return [taxid]
+        return lsubs
+    def _do_all(tree, taxid, subs=set()):
+        '''Get all children taxids in a recursive manner
+        '''
+        lsubs = subs
+        try:
+            for c in tree[taxid]:
+                lsubs.update(_do_all(tree, c, lsubs))
+            lsubs.add(taxid)
+        except KeyError, (e):
+            return [taxid]
+        return lsubs
+    _do = _do_leaves if only_leaves else _do_all
+    tmp = _do(tree, taxid)
     return tmp
-
-def _get_sub_taxids(tree, taxid, subs=[], only_leaves=False):
-    lsubs = subs
-    try:
-        for c in tree[taxid]:
-            lsubs.append(_get_sub_taxids(tree, c, lsubs, only_leaves))
-        if not only_leaves:
-            lsubs.append(taxid)
-    except KeyError, (e):
-        return taxid
-    return lsubs
 
 
 def main():
