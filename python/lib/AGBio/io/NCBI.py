@@ -115,9 +115,9 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                     okflag = False
                     if (hsp.expect <= evalue \
                         
-##                        and (not self._match(al, excludepatterns)) \
-##                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
-##                        or (includepatterns and self._match(al, includepatterns)) \
+                        and (not self._match(al, excludepatterns)) \
+                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
+                        or (includepatterns and self._match(al, includepatterns)) \
                         ):
                         okflag = True
                         if 'evalue' in ffmt:
@@ -128,11 +128,6 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                     line = ' '.join([str(ffmtDict[opt]) for opt in ffmt])
                     writeline(outf, line)
         outf.close()
-
-    def _matchGI(self, gi, gis):
-        if gi in gis:
-            return True
-        return False
 
     def _parseFormat(self, fmt):
         allowed = ('query', 'id', 'gi', 'accession', 'header', 'evalue',
@@ -163,3 +158,4 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                 if p[1] in getattr(al, p[0]):
                     return True
         return False
+    
