@@ -77,7 +77,8 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
         self.results = NCBIXML.parse(self.blastoutput)
 
     def extractData(self, evalue=10, fmt=None, ALL=False, outfile=sys.stdout,
-                    includepatternsiff=None, includepatterns=None, excludepatterns=None):
+                    includepatternsiff=None, includepatterns=None,
+                    excludepatterns=None):
         """Extract data of interest from the parsed blast output.
         
         Arguments:
@@ -108,27 +109,34 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
                     ffmtDict['id'] = '>' + al.hit_id
                 if 'accession' in ffmt:
                     ffmtDict['accession'] = al.accession
+                if 'gi' in ffmt:
+                    ffmtDict['gi'] = al.hit_id.split('|')[1]
                 for hsp in al.hsps:
                     okflag = False
                     if (hsp.expect <= evalue \
-                        and (not self._match(al, excludepatterns)) \
-                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
-                        or (includepatterns and self._match(al, includepatterns)) \
+                        
+##                        and (not self._match(al, excludepatterns)) \
+##                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
+##                        or (includepatterns and self._match(al, includepatterns)) \
                         ):
                         okflag = True
                         if 'evalue' in ffmt:
                             ffmtDict['evalue'] = hsp.expect
+                        if 'sbjct_seq' in ffmt:
+                            ffmtDict['sbjct_seq'] = hsp.sbjct
                 if okflag:
                     line = ' '.join([str(ffmtDict[opt]) for opt in ffmt])
                     writeline(outf, line)
         outf.close()
 
-    def _getGI(self, alignment):
-        return alignment.id
+    def _matchGI(self, gi, gis):
+        if gi in gis:
+            return True
+        return False
 
     def _parseFormat(self, fmt):
-        allowed = ('query', 'id', 'accession', 'header', 'evalue', 'query_seq',
-                   'sbjct_seq', 'full_sbjct_seq')
+        allowed = ('query', 'id', 'gi', 'accession', 'header', 'evalue',
+                   'query_seq', 'sbjct_seq', 'full_sbjct_seq')
         ffmt = fmt.split(',')
         for i in ffmt:
             assert i in allowed

@@ -112,6 +112,11 @@ def main():
                        dest='keeppat',
                        help='Keep patterns that match exactly, no matter what. The patterns should be coma seperated.',
                        metavar='pat1,pat2,pat3' )
+
+    parser.add_option( '-F', '--format',
+                       dest='formatop',
+                       help='format of the output. default is `header,evalue`',
+                       metavar='INTEGER' )
                        
     parser.add_option( '-M', '--max_num_start_seq',
                        dest='maxnumstartseq',
@@ -130,6 +135,10 @@ def main():
                        dest='temp',
                        help='set the temp folder to use.',
                        metavar='FOLDER' )
+
+    parser.add_option( '-S', '--simple',
+                       dest='do_simple', action='store_true', default=False,
+                       help='do not do extra fancy steps. Just parse the file and return the disired output in a file.' )
     
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
@@ -144,7 +153,8 @@ def main():
                          keeppat = None,
                          blastversion = 'legacy',
                          temp = '/tmp/',
-                         maxnumstartseq = None )
+                         maxnumstartseq = None,
+                         formatop = 'header,evalue')
 
     (options, args) = parser.parse_args()
 
@@ -181,7 +191,7 @@ def main():
             sys.stderr.write('    >>> Extracting required data.\n')
         if options.dofilter:
             sequences = blastparser.extractData( evalue=evalue,
-                                                 fmt='header,evalue',
+                                                 fmt=options.formatop,
                                                  outfile=blastindexfile,
                                                  includepatternsiff=fmtOptPat('title', options.keeppatiff),
                                                  includepatterns=fmtOptPat('title', options.keeppat),
@@ -190,8 +200,10 @@ def main():
                                                                   ('title', 'PREDICTED')))
         else:
             sequences = blastparser.extractData( evalue=evalue,
-                                                 fmt='header,evalue',
+                                                 fmt=options.formatop,
                                                  outfile=blastindexfile )
+        if options.do_simple:
+            sys.exit(0)
         
     ## Only keep one copy of a header, the one with the best evalue.
     if verbosity >= 1:
