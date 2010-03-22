@@ -77,7 +77,8 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
         self.results = NCBIXML.parse(self.blastoutput)
 
     def extractData(self, evalue=10, fmt=None, ALL=False, outfile=sys.stdout,
-                    includepatternsiff=None, includepatterns=None, excludepatterns=None):
+                    includepatternsiff=None, includepatterns=None,
+                    excludepatterns=None):
         """Extract data of interest from the parsed blast output.
         
         Arguments:
@@ -98,60 +99,69 @@ class PsiBlastXMLParser(NCBIXML.BlastParser):
 
         if ALL:
             ffmt = ('query', 'id', 'accession', 'evalue', 'query_seq',
-                   'sbjct_seq', 'full_sbjct_seq')
+                    'sbjct_seq', 'full_sbjct_seq', 'gi')
 
         for result in self.results:
             for al in result.alignments:
+                setattr(al, 'gi', al.hit_id.split('|')[1])
+                setattr(al, 'header', '>' + al.title.split('>')[0].strip())
                 if 'header' in ffmt:
-                    ffmtDict['header'] = '>' + al.title.split('>')[0].strip()
+                    ffmtDict['header'] = al.header
                 if 'id' in ffmt:
-                    ffmtDict['id'] = '>' + al.hit_id
+                    ffmtDict['id'] = al.hit_id
                 if 'accession' in ffmt:
                     ffmtDict['accession'] = al.accession
+                if 'gi' in ffmt:
+                    ffmtDict['gi'] = al.gi
                 for hsp in al.hsps:
                     okflag = False
                     if (hsp.expect <= evalue \
-                        and (not self._match(al, excludepatterns)) \
-                        and (True if not includepatternsiff else self._match(al, includepatternsiff)) \
-                        or (includepatterns and self._match(al, includepatterns)) \
+                        and (not (self._contains(al, excludepatterns) \
+                             or self._contained(al, excludepatterns))) \
+                        and (True if not includepatternsiff \
+                             else (self._contains(al, includepatternsiff) \
+                                   or self._contained(al, includepatternsiff))) \
+                        or (includepatterns and self._contains(al, includepatterns)) \
                         ):
                         okflag = True
                         if 'evalue' in ffmt:
                             ffmtDict['evalue'] = hsp.expect
+                        if 'sbjct_seq' in ffmt:
+                            ffmtDict['sbjct_seq'] = hsp.sbjct
                 if okflag:
                     line = ' '.join([str(ffmtDict[opt]) for opt in ffmt])
                     writeline(outf, line)
         outf.close()
 
-    def _getGI(self, alignment):
-        return alignment.id
-
     def _parseFormat(self, fmt):
-        allowed = ('query', 'id', 'accession', 'header', 'evalue', 'query_seq',
-                   'sbjct_seq', 'full_sbjct_seq')
+        allowed = ('query', 'id', 'gi', 'accession', 'header', 'evalue',
+                   'query_seq', 'sbjct_seq', 'full_sbjct_seq')
         ffmt = fmt.split(',')
         for i in ffmt:
             assert i in allowed
         return ffmt
-
-    def _excluded(self, al, patterns):
+    
+    def _contains(self, al, patterns):
         if patterns != None:
-            allowed = ('title')
+            allowed = ('title', 'sbjct_seq', 'header')
             excluded = False
-            for p in patterns:
-                assert p[0] in allowed
-                assert p[0] in al.__dict__
-                if p[1] in getattr(al, p[0]):
-                    return True
+            for keyword, patterns in patterns.items():
+                if keyword not in allowed: break
+                if keyword not in al.__dict__:
+                    raise KeyError, 'invalid keyword : '+keyword
+                for pattern in patterns:
+                    if pattern in getattr(al, keyword):
+                        return True
         return False
 
-    def _match(self, al, patterns):
+    def _contained(self, al, patterns):
         if patterns != None:
-            allowed = ('title')
+            allowed = ('gi')
             excluded = False
-            for p in patterns:
-                assert p[0] in allowed, p[0]
-                assert p[0] in al.__dict__
-                if p[1] in getattr(al, p[0]):
+            for keyword, patterns in patterns.items():
+                if keyword not in allowed: break
+                if keyword not in al.__dict__:
+                    raise KeyError, 'invalid keyword : '+keyword
+                if getattr(al, keyword) in patterns:
                     return True
         return False

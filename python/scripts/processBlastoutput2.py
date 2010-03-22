@@ -3,6 +3,7 @@
 import os
 import sys
 import optparse
+import pickle
 import AGBio.io.Fasta as Fasta
 from AGBio.io.NCBI import PsiBlastXMLParser
 from AGBio.UtilityWrappers import *
@@ -56,12 +57,25 @@ def getTopSeqs(seqs, maxnumseqs=400, startevalue=10, pattern=None,
             sys.stderr.write( '            ' + str(len(topseqs)) + ' matching sequences\n' )
     return (topseqs, evalue)
 
-def fmtOptPat(param, args):
+def fmtOptPat(args):
     '''format the patterns.
     '''
+    output = {}
     if args:
-        return tuple([tuple((param, arg)) for arg in args.split(',')])
+        chunks = args.split(',,')
+        for chunk in chunks:
+            kw, patterns = chunk.split(':')
+            if kw == 'gi':
+                output[kw] = load_gis_from_pickle(patterns)
+            else:
+                output[kw] = patterns.split(',')
+        return output
     return None
+
+def load_gis_from_pickle(filename):
+    with open(os.path.expanduser(filename), 'rb') as iff:
+        output = pickle.load(iff)
+    return output
 
 def main():
 
@@ -106,12 +120,22 @@ def main():
     parser.add_option( '-p', '--keep_patterns_iff',
                        dest='keeppatiff',
                        help='Keep only if patterns match exactly. The patterns should be coma seperated.',
-                       metavar='pat1,pat2,pat3' )
+                       metavar='keyword1:pat1,pat2,pat3,,keyword2:pat1,pat2' )
 
     parser.add_option( '-q', '--keep_patterns',
                        dest='keeppat',
                        help='Keep patterns that match exactly, no matter what. The patterns should be coma seperated.',
-                       metavar='pat1,pat2,pat3' )
+                       metavar='keyword1:pat1,pat2,pat3,,keyword2:pat1,pat2' )
+
+    parser.add_option( '-g', '--gis',
+                       dest='gis',
+                       help='pickle file containing the gis that should match',
+                       metavar='FILE')
+
+    parser.add_option( '-F', '--format',
+                       dest='formatop',
+                       help='format of the output. default is `header,evalue`',
+                       metavar='INTEGER' )
                        
     parser.add_option( '-M', '--max_num_start_seq',
                        dest='maxnumstartseq',
@@ -130,6 +154,14 @@ def main():
                        dest='temp',
                        help='set the temp folder to use.',
                        metavar='FOLDER' )
+
+    parser.add_option( '-P', '--parse',
+                       dest='parse', action='store_true', default=False,
+                       help='do not do extra fancy steps. Just parse the file and return the disired output in a file.' )
+
+    parser.add_option( '-U', '--uniq',
+                       dest='uniq', action='store_true', default=False,
+                       help='remove duplicates.' )
     
     parser.add_option( '-v', '--verbose',
                        dest='verbosity',
@@ -144,7 +176,8 @@ def main():
                          keeppat = None,
                          blastversion = 'legacy',
                          temp = '/tmp/',
-                         maxnumstartseq = None )
+                         maxnumstartseq = None,
+                         formatop = 'header,evalue')
 
     (options, args) = parser.parse_args()
 
@@ -170,34 +203,34 @@ def main():
                                      outfile=blastfastafile )
 
     ## Parse the blast output file.
-    if verbosity >= 1:
-        sys.stderr.write( '\n' )
-        sys.stderr.write( '>>> Parsing blast output : ' +\
-                          options.inputfilename + '\n' )
-    with open(options.inputfilename, 'r') as infile:
-        blastparser = PsiBlastXMLParser(infile)
-        blastparser.parse()
-        if verbosity >= 2:
-            sys.stderr.write('    >>> Extracting required data.\n')
-        if options.dofilter:
-            sequences = blastparser.extractData( evalue=evalue,
-                                                 fmt='header,evalue',
-                                                 outfile=blastindexfile,
-                                                 includepatternsiff=fmtOptPat('title', options.keeppatiff),
-                                                 includepatterns=fmtOptPat('title', options.keeppat),
-                                                 excludepatterns=(('title', 'hypothetical'),
-                                                                  ('title', 'predicted'),
-                                                                  ('title', 'PREDICTED')))
-        else:
-            sequences = blastparser.extractData( evalue=evalue,
-                                                 fmt='header,evalue',
-                                                 outfile=blastindexfile )
+    if options.parse:
+        if verbosity >= 1:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '>>> Parsing blast output : ' +\
+                              options.inputfilename + '\n' )
+        with open(options.inputfilename, 'r') as infile:
+            blastparser = PsiBlastXMLParser(infile)
+            blastparser.parse()
+            if verbosity >= 2:
+                sys.stderr.write('    >>> Extracting required data.\n')
+            if options.dofilter:
+                sequences = blastparser.extractData( evalue=evalue,
+                                                     fmt=options.formatop,
+                                                     outfile=blastindexfile,
+                                                     includepatternsiff=fmtOptPat(options.keeppatiff),
+                                                     includepatterns=fmtOptPat(options.keeppat),
+                                                     excludepatterns=({'title':['hypothetical', 'predicted', 'PREDICTED']}))
+            else:
+                sequences = blastparser.extractData( evalue=evalue,
+                                                     fmt=options.formatop,
+                                                     outfile=blastindexfile )
         
     ## Only keep one copy of a header, the one with the best evalue.
-    if verbosity >= 1:
-        sys.stderr.write( '\n' )
-        sys.stderr.write( '>>> Keeping only best evalues.\n' )
-    uniq(blastindexfile)
+    if options.uniq:
+        if verbosity >= 1:
+            sys.stderr.write( '\n' )
+            sys.stderr.write( '>>> Keeping only best evalues.\n' )
+        uniq(blastindexfile)
     
     ## Gather all GIs in list
     if verbosity >= 2:

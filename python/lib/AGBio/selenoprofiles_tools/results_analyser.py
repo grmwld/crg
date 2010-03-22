@@ -11,7 +11,8 @@ from MMlib import bbash
 from AGBio.io.common import *
 from AGBio.selenoprofiles_tools.files_analysers.p2g import *
 from AGBio.selenoprofiles_tools.files_analysers.b_secisearch import *
-            
+from AGBio.selenoprofiles_tools.files_analysers.ali import *
+
 
 class GenomeFolderParser(object):
     '''Parser of a genome folder (from selenoprofiles)
@@ -43,6 +44,7 @@ class GenomeFolderParser(object):
         self.arg = {}
         self.uga = {}
         self.ual = {}
+        self.hom = {}
         self.secis_std = {}
         self.secis_nonstd = {}
         self.secis_twil = {}
@@ -56,12 +58,15 @@ class GenomeFolderParser(object):
                         'std' : self.secis_std,
                         'non_std' : self.secis_nonstd,
                         'twil' : self.secis_twil,
-                        'bsecis' : self.secis_b}
+                        'bsecis' : self.secis_b,
+                        'homologue' : self.hom}
+        self.p2g = []
+        self.ali = []
 
     def parse(self, doall=False,
               sec=False, cys=False, thr=False, arg=False,
-              uga=False, ual=False, bsecis=False,
-              stdsecis=False, nonstdsecis=False, twilsecis='False'):
+              uga=False, ual=False, hom=False, bsecis=False,
+              stdsecis=False, nonstdsecis=False, twilsecis=False):
         '''Method to parse the folder.
 
         The wanted informations are given as arguments. If `doall` is set to
@@ -75,6 +80,7 @@ class GenomeFolderParser(object):
         - `arg`: check for arginine containing candidates.
         - `uga`: check for UGA containing candidates.
         - `ual`: check for unaligned candidates.
+        - `hom`: check for homologues candidates.
         - `stdsecis`: check for standard SECIS containing candidates.
         - `nonstdsecis`: check for non-std SECIS containing candidates.
         - `twilsecis`: check for twilight SECIS containing candidates.
@@ -89,13 +95,16 @@ class GenomeFolderParser(object):
             if thr: lukw.append('threonine')
             if arg: lukw.append('arginine')
             if uga: lukw.append('uga_containing')
+            if hom: lukw.append('homologue')
             if ual: lukw.append('unaligned')
             if stdsecis : lukw.append('std')
             if nonstdsecis : lukw.append('non_std')
             if twilsecis : lukw.append('twil')
             if bsecis : lukw.append('bsecis')
         for d in self.dirs:
-            resfiles = [f for f in os.listdir(d) if self._keep(f)]
+            resfiles = [f for f in os.listdir(d) \
+                        if self._keep(os.path.join(self.rootdir,
+                                                   'output', f))]
             for ff in resfiles:
                 for kw in lukw:
                     if kw in ff.split('.'):
@@ -106,6 +115,7 @@ class GenomeFolderParser(object):
                                        self.arg,
                                        self.uga,
                                        self.ual,
+                                       self.hom,
                                        self.secis_b] if pp]
 
 
@@ -144,13 +154,29 @@ class GenomeFolderParser(object):
                     else:
                         print 'Removing', outdir
                         shutil.rmtree(outdir)
-        if p2g:
-            for case in self.notempty:
-                for proteink, proteinv in case.items():
-                    for hitk, hitv in protein.items():
-                        p2gfile = [f for f in hitv if f.endswith('.p2g')][0]
-                        p2g_parser = P2G_Parser(p2gfile)
-                        p2g_parser.parse()
+
+    def parse_p2gs(self):
+        for case in self.notempty:
+            for proteink, proteinv in case.items():
+                for hitk, hitv in proteinv.items():
+                    p2gfile = os.path.join(self.rootdir,
+                                           'output',
+                                           [f for f in hitv \
+                                            if f.endswith('.p2g')][0])
+                    p2g_parser = P2G_Parser(p2gfile)
+                    self.p2g.append(p2g_parser)
+                    self.p2g[-1].parse()
+
+    def ali_stats(self):
+        for case in self.notempty:
+            for protname in case.keys():
+                alifile = os.path.join(self.rootdir,
+                                       'output',
+                                       '.'.join([protname, 'ali']))
+                alignment = AliData(alifile)
+                if alignment.filename not in [s.filename for s in self.ali]:
+                    self.ali.append(alignment)
+                    self.ali[-1].find_x_positions()
 
     def isexcluded(self, case):
         ccase = getattr(self, case)
@@ -163,9 +189,11 @@ class GenomeFolderParser(object):
             return False
 
     def _keep(self, filename):
-        trash = ['.ali', '.hit']
+        trash = ['.hit']
         for i in trash:
-            if filename.endswith(i):
+            if filename.endswith(i) \
+                   or (filename.endswith('.ali') \
+                       and os.path.getsize(filename) == 0):
                 return False
         return True
 
@@ -222,6 +250,7 @@ def main():
     pparser = P2G_Parser(pp)
     pparser.parse()
     print pparser.result
+    pparser.result.target.fasta().prints()
     
 
 
