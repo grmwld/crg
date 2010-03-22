@@ -28,19 +28,18 @@ def main():
                        help='bash file containing the commands to execute.',
                        metavar='FILE' )
 
-    parser.add_option( '-n', '--num_batch',
-                       dest='num_batch', type='int',
-                       help='Number of simultaneous steps allowed to be performed',
+    parser.add_option( '-n', '--num_proc',
+                       dest='num_proc', type='int',
+                       help='Number of simultaneous processes.',
                        metavar='INT' )
     
     parser.set_defaults(num_batch = 2)
 
     (opt, args) = parser.parse_args()
 
-    pool = multiprocessing.Pool(processes=2)
+    pool = multiprocessing.Pool(processes=opt.num_proc)
     result = pool.map(worker,
-                      ['blastp -query ~/tt -out ~/tt.out -db nr',
-                       'blastp -query ~/ttttt -out ~/ttttt.out -db nr'])
+                      init_jobs(opt.filecmd))
 
 if __name__ == '__main__':
     main()
