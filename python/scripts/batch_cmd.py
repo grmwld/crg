@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 # -*- coding: utf-8 -*-
 
 from __future__ import with_statement
@@ -43,4 +43,7 @@ def main():
                       init_jobs(opt.filecmd))
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(1)
