@@ -3,24 +3,18 @@
 import os
 import sys
 
-def chop_reads(lines):
-    for line in lines:
-        if line.startswith('@'):
-            chunk = ['>'+line[1:]]
-            chunk.append(lines.next())
-            lines.next()
-            lines.next()
-            chunk.append('>'+lines.next()[1:])
-            chunk.append(lines.next())
-            yield chunk
-
 def main():
 
-    chunks = chop_reads(sys.stdin.xreadlines())
+    lines = sys.stdin.xreadlines()
 
-    for chunk in chunks:
-        for line in chunk:
-            sys.stdout.write(line)
+    for line in lines:
+        if line.startswith('@'):
+            sys.stdout.write('>'+line[1:])
+            sys.stdout.write(lines.next())
+            lines.next()
+            lines.next()
+            sys.stdout.write('>'+lines.next()[1:])
+            sys.stdout.write(lines.next())
 
 
 if __name__ == '__main__':
