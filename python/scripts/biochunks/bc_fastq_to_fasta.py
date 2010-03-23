@@ -8,7 +8,7 @@ def main():
     lines = sys.stdin.xreadlines()
 
     for line in lines:
-        if line.startswith('@'):
+        if line[0] == '@':
             sys.stdout.write('>'+line[1:])
             sys.stdout.write(lines.next())
             lines.next()
