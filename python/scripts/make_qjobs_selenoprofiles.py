@@ -109,7 +109,8 @@ def main():
     for genome in genomeslist:
         tmpfold = genTempfilename(options.tempfolder)
         jobfilename = os.path.join(options.jobsfolder,
-                                   options.jobbasename + genome + '.sh')
+                                   options.jobbasename \
+                                   + genome + '.sh')
 
         with open(jobfilename, 'w') as tjf:
             tjf.write('#!/bin/bash\n')
@@ -123,7 +124,7 @@ def main():
             tjf.write('mkdir ' + tmpfold + '\n')
             tjf.write(' '.join(( 'python', options.sppath,
                                  os.path.abspath(options.outputfolder),
-                                 ' '.join(options.sp_args.split(',')),
+                                 ' '.join(['-'+o for o in options.sp_args.split(',')]),
                                  '-genomes_folder', os.path.abspath(options.genomesfolder),
                                  '-genome', genome,
                                  opt_profilesfolder, opt_profileslist,
