@@ -78,7 +78,7 @@ def main():
                          qparam = 'mem_4',
                          jobsfolder = os.getcwd(),
                          sppath = '/users/rg/mmariotti/Scripts/selenoprofiles.py',
-                         sp_args = '-S',
+                         sp_args = 'S',
                          profileslist = None,
                          profilesfolder = None)
 
