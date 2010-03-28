@@ -232,7 +232,7 @@ class Sequence(object):
                 tmp += replacement
             else:
                 tmp += c
-        return Sequence(self.header, tmp)
+        self._sequence = tmp
 
     def prints(self, outfile=sys.stdout, length=80):
         if length > 0:

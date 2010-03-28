@@ -25,15 +25,15 @@ def main():
                        help='pattern file containing the complete headers.',
                        metavar='FILE' )
 
-    parser.add_option( '-l', '--inplace',
-                       action='store_true',
-                       dest='inplace' )
+    parser.add_option( '-m', '--method',
+                       dest='method',
+                       help='Method to use when filling the headers.' \
+                       'gi means match will be done by gi. inplace means that' \
+                       'header substitution is made by following the order.',
+                       metavar='{gi}|inplace' )
 
-    parser.add_option( '-g', '--gi',
-                       action='store_false',
-                       dest='inplace' )
-
-    parser.set_defaults( outputfilename = None )
+    parser.set_defaults( outputfilename = None,
+                         method = 'gi')
 
     (options, args) = parser.parse_args()
 
@@ -51,7 +51,7 @@ def main():
     else:
         outfile = open(options.outputfilename, 'w')
 
-    if not options.inplace:
+    if options.method == 'gi':
         GI_REGEX = re.compile(r'gi\|(\d+)\|')
 
         for iseq in inlines:
@@ -75,11 +75,13 @@ def main():
                     break
             if nofound:
                 sys.stderr.write('\n' + iseq.header + '\n')
-    else:
+    elif options.method == 'inplace':
         if len(inlines) != len(patlines):
             raise Exception, 'Different number of sequences'
         for seq, pat in zip(inlines, patlines):
             Fasta.Sequence(pat, seq.sequence).prints(outfile, 60)
+    else:
+        parser.error('Wrong method')
 
     outfile.close()
 

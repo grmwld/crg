@@ -9,7 +9,7 @@ HBIN = '/users/rg/agrimaldi/usr/bin/'
 MBIN = '/users/rg/mmariotti/bin/'
 MSCRIPT = '/users/rg/mmariotti/scripts/'
 BLAST = SBIN + 'blastall'
-MAFFT = SBIN + 'mafft'
+MAFFT = 'mafft'
 TRIMAL = HBIN + 'trimal'
 TCOFFEE = HBIN + 't_coffee'
 ADDFULLHEADERS = 'add_detail_to_titles2.py'
@@ -333,11 +333,12 @@ class AddFullHeadersWrapper2(BaseUtilityWrapper, HasInFile, HasOutFile):
     '''Wrapper to use the add_detail_titles3.py utility,
     with fetches the full header of a sequence based on the gi
     '''
-    def __init__(self, infile, outfile, patternfile):
+    def __init__(self, infile, outfile, patternfile, method='gi'):
         BaseUtilityWrapper.__init__(self, 'add_detail_to_titles3.py')
         HasInFile.__init__(self, '-i ', infile)
         HasOutFile.__init__(self, '-o ', outfile)
         self['patternfile'] = ['-p ', patternfile]
+        self['method'] = ['-m ', method]
         self.updateCline()
 
     @property
@@ -347,7 +348,15 @@ class AddFullHeadersWrapper2(BaseUtilityWrapper, HasInFile, HasOutFile):
     def patternfile(self, patternfile):
         self['patternfile'] = ['-p ', patternfile]
         self.updateCline()
-        
+
+    @property
+    def method(self):
+        return self.getClineOpt('method')
+    @method.setter
+    def method(self, value):
+        self['method'] = ['-m ', value]        
+        self.updateCline()
+
 
 class FilterWrapper(UtilityWrapper):
     '''Class to use the fetch_seq.g script
