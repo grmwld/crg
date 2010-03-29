@@ -20,10 +20,11 @@ def find_positions(sstr, symbol):
 def backplace(sstr, positions, o, r):
     output = ''
     ngaps = 0
+    print positions
     for i, c in enumerate(sstr):
         if c == '-':
             ngaps += 1
-        if (i - ngaps) in positions:
+        if c == o and (i - ngaps) in positions:
             output += r
         else:
             output += c
@@ -45,7 +46,9 @@ def main():
     parser.add_option('-m', '--method',
                       dest='method',
                       help='alignment method. tcoffee|mafft|auto.' \
-                      'If set to auto, will use mafft if tcoffee fails')
+                      'If set to auto, mafft will be used if the number ' \
+                      'of sequences exceeds 1000, otherwise, tcoffee will' \
+                      'be used')
 
     parser.add_option('-a', '--n_core',
                       dest='ncore', type='int',
@@ -92,14 +95,21 @@ def main():
         sequences.prints(off)
 
     ## align the sequences and write to a temp file
+    if opts.method != 'auto':
+        al_method = opts.method
+    else:
+        if len(sequences) > 1000:
+            al_method = 'mafft'
+        else:
+            al_method = 'tcoffee'
     tmp_output_al = genTempfilename(opts.temp)
-    if opts.method in ['tcoffee', 'auto']:
+    if al_method == 'tcoffee':
         tcoffee = TcoffeeWrapper(infile=replaced_nonal,
                                  outfile=tmp_output_al,
                                  ncore=opts.ncore)
         print tcoffee.cline
         tcoffee.run()
-    elif opts.method in ['mafft', 'auto']:
+    elif al_method == 'mafft':
         mafft = MafftWrapper(infile=replaced_nonal,
                              outfile=tmp_output_al)
         print mafft.cline
