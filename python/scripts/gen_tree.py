@@ -7,6 +7,7 @@ import os
 import optparse
 import shutil
 import traceback
+import Image, ImageDraw, ImageFont
 #sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/MySQL_python-1.2.2-py2.5-linux-i686.egg')
 #sys.path.append('/soft/general/python-2.5.2/lib/python2.5/site-packages/PyQt4')
 #import PyQt4
@@ -20,6 +21,15 @@ from PyQt4 import QtGui
 
 MAX_SN_LEN = 10
 MAX_LN_LEN = 80
+
+def gen_png(base_im, num_candidates):
+    im = Image.open(base_im)
+    draw = ImageDraw.Draw(im)
+    draw.text((8, 4), str(num_candidates))
+    tmp_png = genTempfilename('/home/agrimaldi/temp')
+    im.save(tmp_png, 'PNG')
+    temp_bin.append(tmp_png)
+    return tmp_png
 
 def load_equivalent_names(filename):
     output = {}
@@ -69,12 +79,12 @@ def layout(node):
             add_to_species_dict(node.name, g_genomes)
             node.img_style['size'] = 10
             species_separator = faces.TextFace(' ', ftype='courier', fsize=12)
-            shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
-                                           ftype='courier',
-                                           fsize=12)
-            pathNameFace = faces.TextFace(species[sanitize(node.name)],
-                                          ftype='courier',
-                                          fsize=12)
+            ## shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
+##                                            ftype='courier',
+##                                            fsize=12)
+##             pathNameFace = faces.TextFace(species[sanitize(node.name)],
+##                                           ftype='courier',
+##                                           fsize=12)
             longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
                                           ftype='courier',
                                           fsize=12)
@@ -105,7 +115,8 @@ def layout(node):
                     if protname in sp_parser.cys.keys() \
                            and not sp_parser.isexcluded('cys'):
                         prot_count += 1
-                        faces.add_face_to_node(facecys, node,
+                        tmp_png = gen_png(imcys, len(sp_parser.cys[protname]))
+                        faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.sec.keys() \
@@ -117,19 +128,22 @@ def layout(node):
                                                    col + 2 + before,
                                                    aligned=True)
                         else:
-                            faces.add_face_to_node(facesec, node,
+                            tmp_png = gen_png(imsec, len(sp_parser.sec[protname]))
+                            faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                    col + 2 + before,
                                                    aligned=True)
                     if protname in sp_parser.thr.keys() \
                            and not sp_parser.isexcluded('thr'):
                         prot_count += 1
-                        faces.add_face_to_node(facethr, node,
+                        tmp_png = gen_png(imthr, len(sp_parser.thr[protname]))
+                        faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.arg.keys() \
                            and not sp_parser.isexcluded('arg'):
                         prot_count += 1
-                        faces.add_face_to_node(facearg, node,
+                        tmp_png = gen_png(imarg, len(sp_parser.arg[protname]))
+                        faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
                     if prot_count == 0:
@@ -139,14 +153,14 @@ def layout(node):
 
                 if has_sec:
                     node.img_style['fgcolor'] = '#75af51'
-                    shortNameFace.fgcolor = QtGui.QColor('#479042')
-    #                longNameFace.bgcolor = QtGui.QColor('#479042')
+    #                shortNameFace.fgcolor = QtGui.QColor('#479042')
+                    longNameFace.bgcolor = QtGui.QColor('#479042')
                 else:
     #                node.img_style['fgcolor'] = '#af5b5b'
-                    shortNameFace.bgcolor = QtGui.QColor('#9c3939')
+    #                shortNameFace.bgcolor = QtGui.QColor('#9c3939')
                     longNameFace.bgcolor = QtGui.QColor('#9c3939')
 
-            faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
+            ##faces.add_face_to_node(shortNameFace, node, column=0, aligned=True)
             ##faces.add_face_to_node(pathNameFace, node, column=1, aligned=True)
             faces.add_face_to_node(longNameFace, node, column=1, aligned=True)
             ##faces.add_face_to_node(species_separator, node, column=1, aligned=True)
@@ -207,19 +221,25 @@ def main():
 
     (options, args) = parser.parse_args()
 
+    global temp_bin
+    global resource_folder
     global domain_of_life
     global g_genomes
     global species
     global resultfolders
     global info
     global bsecisearchoption
+    global imcys, imsec, imsec_b, imarg, imthr
     global facecys, facesec, facesec_b, facearg, facethr, facenan
-    facecys = faces.ImgFace(options.res_folder + 'cys.png')
-    facesec = faces.ImgFace(options.res_folder + 'sec.png')
-    facesec_b = faces.ImgFace(options.res_folder + 'sec-secis.png')
-    facearg = faces.ImgFace(options.res_folder + 'arg.png')
-    facethr = faces.ImgFace(options.res_folder + 'thr.png')
-    facenan = faces.ImgFace(options.res_folder + 'nan.png')
+    resource_folder = options.res_folder
+    temp_bin = []
+    imcys = resource_folder + 'cys.png'
+    imsec = resource_folder + 'sec.png'
+    imsec_b = resource_folder + 'sec-secis.png'
+    imarg = resource_folder + 'arg.png'
+    imthr = resource_folder + 'thr.png'
+    facesec_b = faces.ImgFace(resource_folder + 'sec-secis.png')
+    facenan = faces.ImgFace(resource_folder + 'nan.png')
 
     species = {}
     if options.org_names:
@@ -243,6 +263,8 @@ def main():
     if options.render:
         t.render('tree.png', layout)
 
+    for t in temp_bin:
+        os.remove(t)
 
 if __name__ == '__main__':
     try:
