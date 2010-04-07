@@ -22,6 +22,22 @@ from PyQt4 import QtGui
 MAX_SN_LEN = 10
 MAX_LN_LEN = 80
 
+def parse_nrfile(nrfile):
+    output = {}
+    with open(nrfile) as iff:
+        for line in iff:
+            i = line.strip()
+            org = i.split('/')[-3]
+            prot, num, typ = i.split('/')[-1].split('.')
+            if org in output:
+                if prot in output[org]:
+                    if typ in output[org][prot]:
+                        output[org][prot][typ].append(i)
+                    else: output[org][prot][typ] = [i]
+                else: output[org][prot] = {typ:[i]}
+            else: output[org] = {prot:{typ:[i]}}
+    return output
+
 def gen_png(base_im, num_candidates):
     im = Image.open(base_im)
     draw = ImageDraw.Draw(im)
@@ -35,7 +51,7 @@ def load_equivalent_names(filename):
     output = {}
     with open(filename, 'r') as iff:
         for line in iff:
-            sline = line.split()
+            sline = line.strip().split(':::')
             output[sline[0]] = sline[1]
     return output
 
@@ -72,9 +88,15 @@ def getProts(ff):
 def getFolder(ff):
     return ff.keys()[0]
 
+def get_num_nr(keyword, protname, orgname):
+    if protname in nr_p2g[orgname] and keyword in nr_p2g[orgname][protname]:
+        return len(nr_p2g[orgname][protname][keyword])
+    return 0
+
 def layout(node):
     if node.is_leaf():
         try:
+            sane_node_name = sanitize(node.name)
             has_sec = False
             add_to_species_dict(node.name, g_genomes)
             node.img_style['size'] = 10
@@ -82,7 +104,7 @@ def layout(node):
             ## shortNameFace = faces.TextFace(long2short(node.name).ljust(MAX_SN_LEN),
 ##                                            ftype='courier',
 ##                                            fsize=12)
-##             pathNameFace = faces.TextFace(species[sanitize(node.name)],
+##             pathNameFace = faces.TextFace(species[sane_node_name],
 ##                                           ftype='courier',
 ##                                           fsize=12)
             longNameFace = faces.TextFace(node.name.ljust(MAX_LN_LEN),
@@ -96,8 +118,8 @@ def layout(node):
                 if index > 0:
                     before = len(getProts(info[index - 1]))
             
-                fp = os.path.join(folder, species[sanitize(node.name)])
-                sp_parser = GenomeFolderParser(fp)
+                fp = os.path.join(folder, species[sane_node_name])
+                sp_parser = GenomeFolderParser(fp.strip())
                 sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
                 if bsecisearchoption:
                     sp_parser.parseResultFiles(p2g=False, bsecisearch=True)
@@ -113,36 +135,72 @@ def layout(node):
                 for col, protname in enumerate(protlist):
                     prot_count = 0
                     if protname in sp_parser.cys.keys() \
-                           and not sp_parser.isexcluded('cys'):
+                           and not sp_parser.isexcluded('cys') \
+                           and (not nr_p2g \
+                                or nr_p2g and get_num_nr('cysteine',
+                                                      protname,
+                                                      species[sane_node_name])):
                         prot_count += 1
-                        tmp_png = gen_png(imcys, len(sp_parser.cys[protname]))
-                        faces.add_face_to_node(faces.ImgFace(tmp_png), node,
-                                               col + 2 + before,
+                        n_cand = len(sp_parser.cys[protname])
+                        if nr_p2g:
+                            n_cand = get_num_nr('cysteine',
+                                                protname,
+                                                species[sane_node_name])
+                        tmp_png = gen_png(imcys, n_cand)
+                        faces.add_face_to_node(faces.ImgFace(tmp_png),
+                                               node, col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.sec.keys() \
-                           and not sp_parser.isexcluded('sec'):
+                           and not sp_parser.isexcluded('sec') \
+                           and (not nr_p2g \
+                                or nr_p2g and get_num_nr('selenocysteine',
+                                                      protname,
+                                                      species[sane_node_name])):
                         has_sec = True
                         prot_count += 1
+                        n_cand = len(sp_parser.sec[protname])
+                        if nr_p2g:
+                            n_cand = get_num_nr('selenocysteine',
+                                                protname,
+                                                species[sane_node_name])
                         if protname in sp_parser.secis_b.keys():
                             faces.add_face_to_node(facesec_b, node,
                                                    col + 2 + before,
                                                    aligned=True)
                         else:
-                            tmp_png = gen_png(imsec, len(sp_parser.sec[protname]))
+                            tmp_png = gen_png(imsec, n_cand)
                             faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                    col + 2 + before,
                                                    aligned=True)
                     if protname in sp_parser.thr.keys() \
-                           and not sp_parser.isexcluded('thr'):
+                           and not sp_parser.isexcluded('thr') \
+                           and (not nr_p2g \
+                                or nr_p2g and get_num_nr('threonine',
+                                                      protname,
+                                                      species[sane_node_name])):
                         prot_count += 1
-                        tmp_png = gen_png(imthr, len(sp_parser.thr[protname]))
+                        n_cand = len(sp_parser.thr[protname])
+                        if nr_p2g:
+                            n_cand = get_num_nr('threonine',
+                                                protname,
+                                                species[sane_node_name])
+                        tmp_png = gen_png(imthr, n_cand)
                         faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
                     if protname in sp_parser.arg.keys() \
-                           and not sp_parser.isexcluded('arg'):
+                           and not sp_parser.isexcluded('arg') \
+                           and (not nr_p2g \
+                                or nr_p2g and get_num_nr('arginine',
+                                                      protname,
+                                                      species[sane_node_name])):
                         prot_count += 1
-                        tmp_png = gen_png(imarg, len(sp_parser.arg[protname]))
+                        n_cand = len(sp_parser.arg[protname])
+                        if nr_p2g:
+                            n_cand = get_num_nr('arginine',
+                                                protname,
+                                                species[sane_node_name])
+                        tmp_png = gen_png(imarg, n_cand)
                         faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
@@ -170,7 +228,7 @@ def layout(node):
             node.delete()
         except OSError, e:
             if e.errno == 2:
-                pass
+                print traceback.print_exc()
         except Exception, e:
             print e
             print traceback.print_exc()
@@ -192,6 +250,10 @@ def main():
                       dest='result_folders',
                       help='file used to specify result folders and corresponding proteins. Each line should contain the path to a result folder and a coma separated list of proteins. The path and the list have to be separated by a space.',
                       metavar='FILE')
+
+    parser.add_option('-c', '--nr_file',
+                       dest='nr_file',
+                       help='file containing all the non redundant p2g files. The file should be a list of p2g files, one per line')
 
     parser.add_option('-g', '--gui',
                       action='store_true', dest='gui', default=False,
@@ -222,6 +284,7 @@ def main():
     (options, args) = parser.parse_args()
 
     global temp_bin
+    global nr_p2g
     global resource_folder
     global domain_of_life
     global g_genomes
@@ -242,6 +305,9 @@ def main():
     facenan = faces.ImgFace(resource_folder + 'nan.png')
 
     species = {}
+    nr_p2g = None
+    if options.nr_file:
+        nr_p2g = parse_nrfile(options.nr_file)
     if options.org_names:
         species = load_equivalent_names(options.org_names)
     info = parse_result_folders_file(options.result_folders)
