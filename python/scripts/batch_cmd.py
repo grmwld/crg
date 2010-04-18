@@ -24,23 +24,25 @@ def main():
     
     parser = optparse.OptionParser()
 
-    parser.add_option( '-f', '--file',
-                       dest='filecmd',
-                       help='bash file containing the commands to execute.',
-                       metavar='FILE' )
+    parser.add_option('-f', '--file',
+                      dest='filecmd',
+                      help='bash file containing the commands to execute.',
+                      metavar='FILE')
 
-    parser.add_option( '-n', '--num_proc',
-                       dest='num_proc', type='int',
-                       help='Number of simultaneous processes.',
-                       metavar='INT' )
+    parser.add_option('-n', '--num_proc',
+                      dest='num_proc', type='int',
+                      help='Number of simultaneous processes.',
+                      metavar='INT')
     
     parser.set_defaults(num_batch = 2)
 
     (opt, args) = parser.parse_args()
 
     pool = multiprocessing.Pool(processes=opt.num_proc)
-    result = pool.map(worker,
-                      init_jobs(opt.filecmd))
+    try:
+        result = pool.map_async(worker, init_jobs(opt.filecmd)).get(999999)
+    except KeyboardInterrupt:
+        pool.terminate()
 
 if __name__ == '__main__':
     try:
