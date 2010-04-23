@@ -46,7 +46,7 @@ def main():
 
     for s in sequences:
         t = Sequence(s.header,
-                     s.sequence.translate(transtable))
+                     s.sequence.translate(transtable, opt.delete_chars))
         t.prints()
 
 
