@@ -19,15 +19,15 @@ my $rna_file = 'rna_sequences';
 my $gc_file = 'gc_content.out';
 
 my $energy_limit = -7.5;
-my $min_pos_apical_loop = 19;
-my $max_pos_apical_loop = 50;
+my $min_pos_apical_loop = 16;
+my $max_pos_apical_loop = 37;
 my $min_length_apical_loop = 3;
-my $max_length_apical_loop = 9;
-my $min_length_upper_stem = 3;
+my $max_length_apical_loop = 14;
+my $min_length_upper_stem = 4;
 my $max_length_upper_stem = 16;
 
 my $min_window_length = 39;
-my $max_window_length = 80;
+my $max_window_length = 100;
 
 my $min_length_before_secis = 2;
 my $min_length_after_secis = 0;
@@ -717,9 +717,9 @@ print "There are ", $num, " possible SECIS elements in the query genome.\n\n";
 
 print "Running bSECISProfile algorithm............";
 
-system("rm $input_file");
-system("rm $original_file");
-system("rm *.ps");
+#system("rm $input_file");
+#system("rm $original_file");
+#system("rm *.ps");
 
 print "OK!!\n";
 
@@ -756,7 +756,6 @@ sub extract_sequence_from_fasta_data
         if ($line =~ /^\s*$/)
         {
             next;
-
         }
         elsif($line =~ /^\s*#/)
         {
@@ -764,7 +763,7 @@ sub extract_sequence_from_fasta_data
         }
         elsif($line =~ /^>/)
         {
-            $sequence='';
+            $sequence='AUG';
             $annotation = $line;
             $annotation =~ s/[\t\n\r\f]//g;
             next;
@@ -774,7 +773,7 @@ sub extract_sequence_from_fasta_data
             $sequence .= $line;
             $sequence =~ s/\s//g;
             $sequence =~ s/\d//g;
-            $anno_seqinfo{$annotation}=$sequence;
+            $anno_seqinfo{$annotation}=$sequence . "UAA";
         } 
     }
 
