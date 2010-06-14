@@ -45,6 +45,7 @@ class GenomeFolderParser(object):
         self.uga = {}
         self.ual = {}
         self.hom = {}
+        self.oth = {}
         self.secis_std = {}
         self.secis_nonstd = {}
         self.secis_twil = {}
@@ -59,12 +60,13 @@ class GenomeFolderParser(object):
                         'non_std' : self.secis_nonstd,
                         'twil' : self.secis_twil,
                         'bsecis' : self.secis_b,
-                        'homologue' : self.hom}
+                        'homologue' : self.hom,
+                        'other' : self.oth}
         self.p2g = []
         self.ali = []
 
     def parse(self, doall=False,
-              sec=False, cys=False, thr=False, arg=False,
+              sec=False, cys=False, thr=False, arg=False, oth=False,
               uga=False, ual=False, hom=False, bsecis=False,
               stdsecis=False, nonstdsecis=False, twilsecis=False):
         '''Method to parse the folder.
@@ -97,6 +99,7 @@ class GenomeFolderParser(object):
             if uga: lukw.append('uga_containing')
             if hom: lukw.append('homologue')
             if ual: lukw.append('unaligned')
+            if oth: lukw.append('other')
             if stdsecis : lukw.append('std')
             if nonstdsecis : lukw.append('non_std')
             if twilsecis : lukw.append('twil')
@@ -116,6 +119,7 @@ class GenomeFolderParser(object):
                                        self.uga,
                                        self.ual,
                                        self.hom,
+                                       self.oth,
                                        self.secis_b] if pp]
 
 

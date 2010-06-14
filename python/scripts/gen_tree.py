@@ -120,7 +120,8 @@ def layout(node):
             
                 fp = os.path.join(folder, species[sane_node_name])
                 sp_parser = GenomeFolderParser(fp.strip())
-                sp_parser.parse(sec=True, cys=True, thr=True, arg=True, bsecis=True)
+                sp_parser.parse(sec=True, cys=True, thr=True, arg=True,
+                                uga=True, ual=True, oth=True, bsecis=True)
                 if bsecisearchoption:
                     sp_parser.parseResultFiles(p2g=False, bsecisearch=True)
                     sp_parser = GenomeFolderParser(fp)
@@ -140,7 +141,7 @@ def layout(node):
                                 or nr_p2g and get_num_nr('cysteine',
                                                       protname,
                                                       species[sane_node_name])):
-                        prot_count += 1
+                        prot_count = 1
                         n_cand = len(sp_parser.cys[protname])
                         if nr_p2g:
                             n_cand = get_num_nr('cysteine',
@@ -157,7 +158,7 @@ def layout(node):
                                                       protname,
                                                       species[sane_node_name])):
                         has_sec = True
-                        prot_count += 1
+                        prot_count = 1
                         n_cand = len(sp_parser.sec[protname])
                         if nr_p2g:
                             n_cand = get_num_nr('selenocysteine',
@@ -178,7 +179,7 @@ def layout(node):
                                 or nr_p2g and get_num_nr('threonine',
                                                       protname,
                                                       species[sane_node_name])):
-                        prot_count += 1
+                        prot_count = 1
                         n_cand = len(sp_parser.thr[protname])
                         if nr_p2g:
                             n_cand = get_num_nr('threonine',
@@ -194,13 +195,33 @@ def layout(node):
                                 or nr_p2g and get_num_nr('arginine',
                                                       protname,
                                                       species[sane_node_name])):
-                        prot_count += 1
+                        prot_count = 1
                         n_cand = len(sp_parser.arg[protname])
                         if nr_p2g:
                             n_cand = get_num_nr('arginine',
                                                 protname,
                                                 species[sane_node_name])
                         tmp_png = gen_png(imarg, n_cand)
+                        faces.add_face_to_node(faces.ImgFace(tmp_png), node,
+                                               col + 2 + before,
+                                               aligned=True)
+                    n_cand = 0
+                    for kw in [('ual', 'unaligned'), ('uga', 'uga_containing'),
+                               ('oth', 'other')]:
+                        if protname in getattr(sp_parser, kw[0]).keys() \
+                           and not sp_parser.isexcluded(kw[0]) \
+                           and (not nr_p2g \
+                                or nr_p2g and get_num_nr(kw[1],
+                                                      protname,
+                                                      species[sane_node_name])):
+                            prot_count = 1
+                            n_cand += len(getattr(sp_parser, kw[0])[protname])
+                            if nr_p2g:
+                                n_cand += get_num_nr(kw[1],
+                                                     protname,
+                                                     species[sane_node_name])
+                    if n_cand:
+                        tmp_png = gen_png(imoth, n_cand)
                         faces.add_face_to_node(faces.ImgFace(tmp_png), node,
                                                col + 2 + before,
                                                aligned=True)
@@ -292,7 +313,7 @@ def main():
     global resultfolders
     global info
     global bsecisearchoption
-    global imcys, imsec, imsec_b, imarg, imthr
+    global imcys, imsec, imsec_b, imarg, imthr, imoth
     global facecys, facesec, facesec_b, facearg, facethr, facenan
     resource_folder = options.res_folder
     temp_bin = []
@@ -301,6 +322,7 @@ def main():
     imsec_b = resource_folder + 'sec-secis.png'
     imarg = resource_folder + 'arg.png'
     imthr = resource_folder + 'thr.png'
+    imoth = resource_folder + 'oth.png'
     facesec_b = faces.ImgFace(resource_folder + 'sec-secis.png')
     facenan = faces.ImgFace(resource_folder + 'nan.png')
 
@@ -327,7 +349,7 @@ def main():
         print t
 
     if options.render:
-        t.render('tree.png', layout)
+        t.render('tree.png', layout, w=2500, h=40*len(g_genomes))
 
     for t in temp_bin:
         os.remove(t)

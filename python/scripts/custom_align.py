@@ -6,6 +6,7 @@ import sys
 import os
 import optparse
 import string
+import traceback
 from AGBio.Utilities import *
 from AGBio.io.Fasta import *
 from AGBio.UtilityWrappers import *
@@ -17,14 +18,14 @@ def find_positions(sstr, symbol):
             opos.append(i)
     return opos
 
-def backplace(sstr, positions, o, r):
+def backplace(sstr, pdict, transtab):
     output = ''
     ngaps = 0
     for i, c in enumerate(sstr):
         if c == '-':
             ngaps += 1
-        if c == o and (i - ngaps) in positions:
-            output += r
+        if c in pdict.keys() and (i - ngaps) in pdict[c]:
+            output += transtab[c]
         else:
             output += c
     return output
@@ -84,6 +85,12 @@ def main():
         
         data_dict = {}
         before, after = opts.replace.split(':')
+        transtab = {}
+        rev_transtab = {}
+        for i, c in enumerate(before):
+            transtab[c] = after[i]
+        for i, c in enumerate(after):
+            rev_transtab[c] = before[i]
 
         with open(opts.infile, 'r') as iff:
             sequences = loadSequences(iff)
@@ -94,9 +101,11 @@ def main():
         with open(ori_headers, 'w') as hof:
             with open(replaced_nonal, 'w') as rof:
                 for sequence in sequences:
-                    tpos = find_positions(sequence.sequence, before)
-                    sequence.replacePattern(before, after)
-                    data_dict[sequence.header] = tpos
+                    data_dict[sequence.header] = {}
+                    for bsymb, asymb in transtab.items():
+                        tpos = find_positions(sequence.sequence, bsymb)
+                        sequence.replacePattern(bsymb, asymb)
+                        data_dict[sequence.header][asymb] = tpos
                     hof.write(sequence.header+'\n')
                     sequence.prints(rof)
 
@@ -142,11 +151,11 @@ def main():
                 for s in sequences:
                     backplaced_seq = backplace(s.sequence,
                                                data_dict[s.header],
-                                               after, before)
+                                               rev_transtab)
                     Sequence(s.header, backplaced_seq).prints(off)
 
     except Exception, (e):
-        raise e
+        traceback.print_exc()
     finally:
         if not opts.debug:
             os.remove(tmp_output_filled)
